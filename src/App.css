@@ -1,0 +1,74 @@
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+
+/* Custom styles for Leaflet markers */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.user-location-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Routing control customization */
+.leaflet-routing-container {
+  background-color: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  max-width: 320px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.leaflet-routing-alt {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.leaflet-routing-alt h2 {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.leaflet-routing-alt tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* Animate button hover state */
+button {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Animation for page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
