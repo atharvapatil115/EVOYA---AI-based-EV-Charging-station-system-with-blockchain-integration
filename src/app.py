@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Models2
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Models2', 'Models2')))  # Models2/Models2 directory
 
 # Import ChargingStationRecommender
-from station_recommender import ChargingStationRecommender
+from Models2.Models2.station_recommender import ChargingStationRecommender
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
