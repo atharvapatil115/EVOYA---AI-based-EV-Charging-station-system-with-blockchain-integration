@@ -13,6 +13,9 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))  # src directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Models2')))  # Models2 directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Models2', 'Models2')))  # Models2/Models2 directory
 
+# Import ChargingStationRecommender
+from station_recommender import ChargingStationRecommender
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
 
@@ -26,6 +29,9 @@ except ModuleNotFoundError as e:
 except FileNotFoundError:
     print(f"Pickle file not found at {os.path.join('Models2', 'Models2', 'CS_rec.pkl')}")
     raise Exception("Pickle file not found. Check the file path.")
+except Exception as e:
+    print(f"Error loading CS_rec.pkl: {e}")
+    raise
 
 # Load the load balancing model
 try:
@@ -34,9 +40,6 @@ try:
         load_balancer = load_balancer_data['model']
         scaler = load_balancer_data['scaler']
         feature_names = load_balancer_data['feature_names']
-except ModuleNotFoundError as e:
-    print(f"Module not found: {e}")
-    raise Exception("Cannot load load balancing model due to missing module.")
 except FileNotFoundError:
     print(f"Pickle file not found at {os.path.join('Models2', 'Models2', 'load_balancing_model.pkl')}")
     raise Exception("Load balancing model file not found. Check the file path.")
@@ -81,7 +84,7 @@ def get_nearby_stations():
 
         try:
             stations = nearby_model.find_nearest(lat, lng)
-            print(f"Model output: {stations}")
+            print(f"Model output shape: {len(stations)} stations")
         except Exception as e:
             print(f"Error in find_nearest: {str(e)}")
             return jsonify({'error': f'Error in model.find_nearest: {str(e)}'}), 500
@@ -101,8 +104,8 @@ def get_nearby_stations():
                 'powerAvailable': station.get('powerAvailable', 50),
                 'lastUpdated': datetime.now().strftime('%Y-%m-%d %H:%M'),
                 'pricePerKWh': station.get('pricePerKWh', '₹15.00'),
-                'connectorTypes': station.get('connectorTypes', ['CCS', 'Type 2']),
-                'status': station.get('status', 'Available'),
+                'controllerTypes': station.get('controllerTypes', ['CCS', 'Type 2']),
+                'status': 'Available',
                 'lat': station['lattitude'],
                 'lng': station['longitude'],
                 'distance': f"{station['distance']:.2f} km",
@@ -132,7 +135,7 @@ def get_availability_prediction():
         # Get nearby stations
         try:
             stations = nearby_model.find_nearest(lat, lng)
-            print(f"Nearby stations: {stations}")
+            print(f"Nearby stations: {len(stations)} found")
         except Exception as e:
             print(f"Error in find_nearest: {str(e)}")
             return jsonify({'error': f'Error in model.find_nearest: {str(e)}'}), 500
@@ -144,11 +147,17 @@ def get_availability_prediction():
 
         # Calculate current time and predict availability
         current_time = datetime.now()
-        speed_kmph = 60  # Average speed in km/h
+        speed_kmph = 50  # Average speed in km/h
 
         formatted_stations = []
         for station in stations:
-            # Calculate distance using Haversine formula
+            # Log station data
+            print(f"Station {station['name']}: Total_Slots={station.get('Total_Slots', 6)}, "
+                  f"6AM-11AM_Booked_slots={station.get('6AM-11AM_Booked_slots', 0)}, "
+                  f"11AM-4PM_Booked_slots={station.get('11AM-4PM_Booked_slots', 0)}, "
+                  f"4PM-10PM_Booked_slots={station.get('4PM-10PM_Booked_slots', 0)}")
+
+            # Calculate distance
             distance_km = float(station['distance']) if isinstance(station['distance'], str) else station['distance']
             
             # Calculate travel time (hours)
@@ -157,46 +166,61 @@ def get_availability_prediction():
             
             # Calculate estimated arrival time
             arrival_time = current_time + timedelta(minutes=travel_time_minutes)
-            arrival_hour = arrival_time.hour + (arrival_time.minute / 60)
+            arrival_hour = arrival_time.hour
+            print(f"Station {station['name']}: Distance={distance_km:.2f} km, "
+                  f"Arrival={arrival_time.strftime('%Y-%m-%d %H:%M')}, Hour={arrival_hour}")
             
             # Determine time slot
             time_slot = get_time_slot(arrival_hour)
             if not time_slot:
-                prediction = False  # Default to False if outside time slots
+                prediction = False
                 print(f"Station {station['name']}: No valid time slot for hour {arrival_hour}")
             else:
                 # Prepare input for load balancing model
                 total_slots = station.get('Total_Slots', 6)
                 booked_slots_key = f'{time_slot}_Booked_slots'
                 booked_slots = station.get(booked_slots_key, 0)
+                booking_ratio = booked_slots / total_slots if total_slots > 0 else 0
                 
-                # Prepare input DataFrame
-                input_data = pd.DataFrame({
-                    'Total_Slots': [total_slots],
-                    f'{time_slot}_Booked_slots': [booked_slots],
-                    'time_slot': [time_slot]
-                })
+                print(f"Station {station['name']}: Total_Slots={total_slots}, "
+                      f"{booked_slots_key}={booked_slots}, Booking_ratio={booking_ratio:.2f}")
                 
-                print(f"Input data before encoding for {station['name']}: {input_data}")
-                
-                # Encode time_slot
-                input_data = pd.get_dummies(input_data, columns=['time_slot'], prefix='time_slot')
-                
-                print(f"Input data after encoding for {station['name']}: {input_data}")
-                
-                # Ensure all feature columns are present
-                for col in feature_names:
-                    if col not in input_data.columns:
-                        input_data[col] = 0
-                
-                # Reorder columns to match training
-                input_data = input_data[feature_names]
-                
-                print(f"Final input data for {station['name']}: {input_data}")
-                
-                # Scale and predict
-                input_scaled = scaler.transform(input_data)
-                prediction = bool(load_balancer.predict(input_scaled)[0])
+                # Apply 70% threshold
+                if booking_ratio > 0.7:
+                    prediction = False
+                    print(f"Station {station['name']}: Booking ratio {booking_ratio:.2f} > 0.7, "
+                          f"setting prediction to False")
+                else:
+                    # Prepare input DataFrame
+                    input_data = pd.DataFrame({
+                        'Total_Slots': [total_slots],
+                        'booking_ratio': [booking_ratio],
+                        'time_slot': [time_slot]
+                    })
+                    
+                    print(f"Input data before encoding for {station['name']}: {input_data}")
+                    
+                    # Encode time_slot
+                    input_data = pd.get_dummies(input_data, columns=['time_slot'], prefix='time_slot')
+                    
+                    print(f"Input data after encoding for {station['name']}: {input_data}")
+                    
+                    # Ensure all feature columns are present
+                    for col in feature_names:
+                        if col not in input_data.columns:
+                            input_data[col] = 0
+                    
+                    # Reorder columns to match training
+                    input_data = input_data[feature_names]
+                    
+                    print(f"Final input data for {station['name']}: {input_data}")
+                    
+                    # Scale and predict
+                    input_scaled = scaler.transform(input_data)
+                    model_prediction = load_balancer.predict(input_scaled)[0]
+                    prediction = bool(model_prediction)
+                    print(f"Station {station['name']}: Model prediction={model_prediction}, "
+                          f"Final prediction={prediction}")
             
             formatted_stations.append({
                 'id': str(station.get('index', uuid.uuid4())),
@@ -206,8 +230,8 @@ def get_availability_prediction():
                 'powerAvailable': station.get('powerAvailable', 50),
                 'lastUpdated': datetime.now().strftime('%Y-%m-%d %H:%M'),
                 'pricePerKWh': station.get('pricePerKWh', '₹15.00'),
-                'connectorTypes': station.get('connectorTypes', ['CCS', 'Type 2']),
-                'status': station.get('status', 'Available'),
+                'controllerTypes': station.get('controllerTypes', ['CCS', 'Type 2']),
+                'status': 'Available',
                 'lat': station['lattitude'],
                 'lng': station['longitude'],
                 'distance': f"{station['distance']:.2f} km",
@@ -220,8 +244,63 @@ def get_availability_prediction():
             })
 
         return jsonify(formatted_stations), 200
+
     except Exception as e:
         print(f"General error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Test endpoint for high booking ratio
+@app.route('/api/test_prediction', methods=['POST'])
+def test_prediction():
+    try:
+        data = request.get_json()
+        total_slots = data.get('total_slots', 9)
+        booked_slots = data.get('booked_slots', 8)
+        time_slot = data.get('time_slot', '11AM-4PM')
+
+        booking_ratio = booked_slots / total_slots if total_slots > 0 else 0
+        print(f"Test: Total_Slots={total_slots}, Booked_Slots={booked_slots}, "
+              f"Time_Slot={time_slot}, Booking_ratio={booking_ratio:.2f}")
+
+        if booking_ratio > 0.7:
+            prediction = False
+            print(f"Test: Booking ratio {booking_ratio:.2f} > 0.7, setting prediction to False")
+        else:
+            input_data = pd.DataFrame({
+                'Total_Slots': [total_slots],
+                'booking_ratio': [booking_ratio],
+                'time_slot': [time_slot]
+            })
+
+            print(f"Test input before encoding: {input_data}")
+
+            input_data = pd.get_dummies(input_data, columns=['time_slot'], prefix='time_slot')
+
+            print(f"Test input after encoding: {input_data}")
+
+            for col in feature_names:
+                if col not in input_data.columns:
+                    input_data[col] = 0
+
+            input_data = input_data[feature_names]
+
+            print(f"Test final input: {input_data}")
+
+            input_scaled = scaler.transform(input_data)
+            model_prediction = load_balancer.predict(input_scaled)[0]
+            prediction = bool(model_prediction)
+            print(f"Test: Model prediction={model_prediction}, Final prediction={prediction}")
+
+        return jsonify({
+            'total_slots': total_slots,
+            'booked_slots': booked_slots,
+            'booking_ratio': booking_ratio,
+            'time_slot': time_slot,
+            'recommended': prediction
+        }), 200
+
+    except Exception as e:
+        print(f"Test error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

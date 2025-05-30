@@ -6,58 +6,101 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import ViewStations from '../components/ViewStations';
 import EVStatus from '../components/EVStatus';
 
-// Fix for default marker icons
+// Remove default Leaflet icon styles
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Custom icons
-const stationIconGreen = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png', // Green marker
-  iconSize: [25, 40],
-  iconAnchor: [12, 40],
-  popupAnchor: [0, -40],
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  shadowSize: [48, 48],
+// Emoji-based markers using L.divIcon
+const userIcon = new L.divIcon({
+  html: '<span style="font-size: 24px; color: #ff0000;">📍</span>',
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
-const stationIconRed = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png', // Red marker
-  iconSize: [25, 40],
-  iconAnchor: [12, 40],
-  popupAnchor: [0, -40],
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  shadowSize: [48, 48],
+const navigationIcon = new L.divIcon({
+  html: '<span style="font-size: 24px; color: #0000ff;">📍</span>',
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
-const userIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+const pinIcon = new L.divIcon({
+  html: '<span style="font-size: 24px; color: #ff4500;">📍</span>',
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
-const navigationIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+const availableIcon = new L.divIcon({
+  html: '<span style="font-size: 24px; color: #32cd32;">🔰</span>',
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
-const pinIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+const unavailableIcon = new L.divIcon({
+  html: '<span style="font-size: 24px; color: #ff0000;">⚠️</span>',
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
 });
 
-// Component to handle map click for dropping a pin
+// ViewStations component for displaying station cards
+const ViewStations = ({ stations, handleNavigate, isDarkMode }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {stations.map((station) => (
+      <motion.div
+        key={station.id}
+        className={`p-4 rounded-lg shadow-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-700'}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h3 className="text-lg font-semibold">{station.name}</h3>
+        <p className="text-sm">{station.location}</p>
+        <p className="text-sm">Address: {station.address}</p>
+        <p className="text-sm">Power: {station.powerAvailable} kW</p>
+        <p className="text-sm">Price: {station.pricePerKWh}</p>
+        {station.recommended && station.weatherSafe ? (
+          <p className="text-sm text-green-500 font-medium">Recommended: Yes (Safe to travel)</p>
+        ) : (
+          <p className="text-sm text-red-500 font-medium">Likely unavailable, choose a different station</p>
+        )}
+        {station.weather && (
+          <p className="text-sm mt-1">Weather: {station.weather.description} ({station.weather.temp}°C)</p>
+        )}
+        {station.arrivalTime && (
+          <p className="text-sm mt-1">Est. Arrival: {station.arrivalTime}</p>
+        )}
+        <button
+          onClick={() => handleNavigate(station)}
+          className={`mt-2 px-4 py-2 rounded text-white transition-colors ${
+            station.recommended && station.weatherSafe
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'bg-gray-400 cursor-not-allowed'
+          }`}
+          disabled={!(station.recommended && station.weatherSafe)}
+        >
+          Navigate
+        </button>
+      </motion.div>
+    ))}
+  </div>
+);
+
+// MapClickHandler for dropping pins
 const MapClickHandler = ({ setDroppedPin }) => {
   useMapEvents({
     click(e) {
@@ -67,35 +110,37 @@ const MapClickHandler = ({ setDroppedPin }) => {
   return null;
 };
 
-// Component to handle map resizing and bounds
+// MapController for map resizing and bounds
 const MapController = ({ navigating, userLocation, nearbyStations, centerAndFitBounds, droppedPin }) => {
   const map = useMap();
 
   useEffect(() => {
-    map.invalidateSize();
-    if (centerAndFitBounds && userLocation && nearbyStations.length > 0) {
-      const bounds = L.latLngBounds([
-        droppedPin ? [droppedPin.lat, droppedPin.lng] : [userLocation.lat, userLocation.lng],
-        ...nearbyStations.map((station) => [station.lat, station.lng]),
-      ]);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    } else if (droppedPin) {
-      map.setView([droppedPin.lat, droppedPin.lng], 12);
-    } else if (userLocation) {
-      map.setView([userLocation.lat, userLocation.lng], 12);
+    if (map) {
+      map.invalidateSize();
+      if (centerAndFitBounds && userLocation && nearbyStations.length > 0) {
+        const bounds = L.latLngBounds([
+          droppedPin ? [droppedPin.lat, droppedPin.lng] : [userLocation.lat, userLocation.lng],
+          ...nearbyStations.map((station) => [station.lat, station.lng]),
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      } else if (droppedPin) {
+        map.setView([droppedPin.lat, droppedPin.lng], 13);
+      } else if (userLocation) {
+        map.setView([userLocation.lat, userLocation.lng], 13);
+      }
     }
   }, [map, navigating, userLocation, nearbyStations, centerAndFitBounds, droppedPin]);
 
   return null;
 };
 
-// Routing control component
+// RoutingMachine for navigation routes
 const RoutingMachine = ({ userLocation, destination }) => {
   const map = useMap();
   const routingControlRef = useRef(null);
 
   useEffect(() => {
-    if (!userLocation || !destination) return;
+    if (!userLocation || !destination || !map) return;
 
     if (routingControlRef.current) {
       map.removeControl(routingControlRef.current);
@@ -107,7 +152,7 @@ const RoutingMachine = ({ userLocation, destination }) => {
         L.latLng(destination.lat, destination.lng),
       ],
       lineOptions: {
-        styles: [{ color: '#6366F1', weight: 4 }],
+        styles: [{ color: '#16a34a', weight: 4 }],
         extendToWaypoints: true,
         missingRouteTolerance: 0,
       },
@@ -118,7 +163,7 @@ const RoutingMachine = ({ userLocation, destination }) => {
     }).addTo(map);
 
     return () => {
-      if (routingControlRef.current) {
+      if (routingControlRef.current && map) {
         map.removeControl(routingControlRef.current);
       }
     };
@@ -127,14 +172,16 @@ const RoutingMachine = ({ userLocation, destination }) => {
   return null;
 };
 
-// Component to manage map layers
+// MapLayers for map tile types
 const MapLayers = ({ mapType }) => {
   const map = useMap();
   const [tileError, setTileError] = useState(false);
 
   useEffect(() => {
+    if (!map) return;
+
     const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).on('tileerror', () => setTileError(true));
 
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -174,7 +221,7 @@ const MapLayers = ({ mapType }) => {
 
   return tileError ? (
     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-80 z-[1000]">
-      <p className="text-red-600 font-semibold">Failed to load map tiles. Please check your internet connection.</p>
+      <p className="text-red-600 font-semibold">Failed to load map tiles. Check your internet connection.</p>
     </div>
   ) : null;
 };
@@ -185,9 +232,9 @@ const sampleStations = [
     id: '1',
     name: 'Central EV Hub',
     location: 'Downtown, Mumbai',
-    address: '123 Main Street, Mumbai',
+    address: '123 Main St, Mumbai',
     powerAvailable: 75,
-    lastUpdated: '2025-05-15 12:30',
+    lastUpdated: '2025-05-30 11:00',
     pricePerKWh: '₹15.50',
     connectorTypes: ['CCS', 'CHAdeMO', 'Type 2'],
     status: 'Available',
@@ -197,14 +244,17 @@ const sampleStations = [
     bookedSlots6AM_11AM: 4,
     bookedSlots11AM_4PM: 2,
     bookedSlots4PM_10PM: 1,
+    recommended: true,
+    weatherSafe: true,
+    weather: { description: 'clear sky', temp: 28 },
   },
   {
     id: '2',
     name: 'Green Energy Station',
     location: 'Bandra, Mumbai',
-    address: '456 Green Avenue, Bandra, Mumbai',
+    address: '456 Green Ave, Bandra, Mumbai',
     powerAvailable: 50,
-    lastUpdated: '2025-05-15 12:45',
+    lastUpdated: '2025-05-30 11:05',
     pricePerKWh: '₹14.75',
     connectorTypes: ['CCS', 'Type 2'],
     status: 'Available',
@@ -214,31 +264,37 @@ const sampleStations = [
     bookedSlots6AM_11AM: 3,
     bookedSlots11AM_4PM: 5,
     bookedSlots4PM_10PM: 2,
+    recommended: false,
+    weatherSafe: true,
+    weather: { description: 'light rain', temp: 27 },
   },
   {
     id: '3',
     name: 'Tech Park Chargers',
     location: 'Powai, Mumbai',
-    address: '789 Tech Park Road, Powai, Mumbai',
+    address: '789 Tech Park Rd, Powai, Mumbai',
     powerAvailable: 100,
-    lastUpdated: '2025-05-15 12:15',
+    lastUpdated: '2025-05-30 10:55',
     pricePerKWh: '₹16.00',
     connectorTypes: ['CCS', 'CHAdeMO', 'Type 2', 'Tesla'],
     status: 'Available',
     lat: 19.1176,
-    lng: 72.9060,
+    lng: 72.906,
     totalSlots: 8,
     bookedSlots6AM_11AM: 6,
     bookedSlots11AM_4PM: 4,
     bookedSlots4PM_10PM: 3,
+    recommended: true,
+    weatherSafe: false,
+    weather: { description: 'thunderstorm', temp: 26 },
   },
   {
     id: '4',
     name: 'Seaside Charging',
     location: 'Marine Drive, Mumbai',
-    address: '321 Marine Drive, Mumbai',
+    address: '321 Marine Dr, Mumbai',
     powerAvailable: 60,
-    lastUpdated: '2025-05-15 11:50',
+    lastUpdated: '2025-05-30 10:50',
     pricePerKWh: '₹15.25',
     connectorTypes: ['CCS', 'Type 2'],
     status: 'Available',
@@ -248,14 +304,17 @@ const sampleStations = [
     bookedSlots6AM_11AM: 4,
     bookedSlots11AM_4PM: 3,
     bookedSlots4PM_10PM: 1,
+    recommended: true,
+    weatherSafe: true,
+    weather: { description: 'partly cloudy', temp: 29 },
   },
   {
     id: '5',
     name: 'Highway Express Station',
     location: 'Navi Mumbai',
-    address: '555 Eastern Express Highway, Navi Mumbai',
+    address: '555 Eastern Express Hwy, Navi Mumbai',
     powerAvailable: 90,
-    lastUpdated: '2025-05-15 12:00',
+    lastUpdated: '2025-05-30 11:00',
     pricePerKWh: '₹14.50',
     connectorTypes: ['CCS', 'CHAdeMO', 'Type 2'],
     status: 'Available',
@@ -265,6 +324,9 @@ const sampleStations = [
     bookedSlots6AM_11AM: 5,
     bookedSlots11AM_4PM: 2,
     bookedSlots4PM_10PM: 4,
+    recommended: true,
+    weatherSafe: true,
+    weather: { description: 'clear sky', temp: 28 },
   },
 ];
 
@@ -282,6 +344,9 @@ const ReceiverDashboard = ({ stations = [] }) => {
   const [droppedPin, setDroppedPin] = useState(null);
   const watchIdRef = useRef(null);
 
+  // Replace with your OpenWeatherMap API key
+  const WEATHER_API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY'; // Sign up at https://openweathermap.org/
+
   // Get user's initial location
   useEffect(() => {
     if ('geolocation' in navigator) {
@@ -294,7 +359,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
         },
         (error) => {
           console.error('Error getting location:', error);
-          setUserLocation({ lat: 19.076, lng: 72.8777 });
+          setUserLocation({ lat: 19.076, lng: 72.8777 }); // Default to Mumbai
         }
       );
     } else {
@@ -341,7 +406,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
         },
         (error) => {
           console.error('Error getting location:', error);
-          alert('Unable to get current location. Please ensure location services are enabled.');
+          alert('Unable to get current location. Ensure location services are enabled.');
         }
       );
     } else {
@@ -355,11 +420,38 @@ const ReceiverDashboard = ({ stations = [] }) => {
     setCenterAndFitBounds(false);
   };
 
+  // Fetch weather data for a station
+  const fetchWeather = async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${WEATHER_API_KEY}&units=metric`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather data');
+      }
+      const data = await response.json();
+      const isSafe = !(
+        (data.weather[0].id >= 200 && data.weather[0].id < 600) ||
+        data.main.temp < 0 ||
+        data.main.temp > 40 ||
+        data.wind.speed * 3.6 > 50
+      );
+      return {
+        safe: isSafe,
+        description: data.weather[0].description,
+        temp: Math.round(data.main.temp),
+      };
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      return { safe: true, description: 'Unknown', temp: 0 };
+    }
+  };
+
   // Fetch nearby stations
   const fetchNearbyStations = async () => {
     const location = droppedPin || userLocation;
     if (!location) {
-      alert('Location not available. Please enable location services or drop a pin on the map.');
+      alert('Location not available. Enable location services or drop a pin on the map.');
       return;
     }
 
@@ -380,7 +472,13 @@ const ReceiverDashboard = ({ stations = [] }) => {
         throw new Error('Failed to fetch nearby stations');
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      data = await Promise.all(
+        data.map(async (station) => {
+          const weather = await fetchWeather(station.lat, station.lng);
+          return { ...station, weatherSafe: weather.safe, weather: { description: weather.description, temp: weather.temp } };
+        })
+      );
       setNearbyStations(data);
       setSelectedStation(null);
       setNavigating(false);
@@ -399,7 +497,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
   const fetchAvailabilityPredictions = async () => {
     const location = droppedPin || userLocation;
     if (!location) {
-      alert('Location not available. Please enable location services or drop a pin on the map.');
+      alert('Location not available. Enable location services or drop a pin on the map.');
       return;
     }
 
@@ -420,7 +518,13 @@ const ReceiverDashboard = ({ stations = [] }) => {
         throw new Error('Failed to fetch availability predictions');
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      data = await Promise.all(
+        data.map(async (station) => {
+          const weather = await fetchWeather(station.lat, station.lng);
+          return { ...station, weatherSafe: weather.safe, weather: { description: weather.description, temp: weather.temp } };
+        })
+      );
       setNearbyStations(data);
       setSelectedStation(null);
       setNavigating(false);
@@ -453,7 +557,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'}`}>
       <Navbar
         setActiveSection={setActiveSection}
         isDarkMode={isDarkMode}
@@ -480,7 +584,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
 
             <div className="mb-6">
               <div className={`rounded-lg overflow-hidden shadow-md ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="p-4">
+                <div className="p-4 flex items-center">
                   <label htmlFor="mapType" className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mr-2`}>
                     Map Type:
                   </label>
@@ -489,7 +593,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
                     value={mapType}
                     onChange={handleMapTypeChange}
                     className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'
+                      isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-700 border-gray-300'
                     }`}
                   >
                     <option value="street">Street</option>
@@ -498,7 +602,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
                   </select>
                 </div>
 
-                <div className={`${navigating ? 'h-[750px]' : 'h-[500px]'} w-full relative transition-all duration-300`}>
+                <div className={`${navigating ? 'h-[600px]' : 'h-[450px]'} w-full relative transition-all duration-300`}>
                   {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[1000]">
                       <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
@@ -507,7 +611,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
                   {userLocation ? (
                     <MapContainer
                       center={[userLocation.lat, userLocation.lng]}
-                      zoom={12}
+                      zoom={13}
                       className="h-full w-full"
                       style={{ height: '100%', width: '100%' }}
                       whenReady={() => setMapReady(true)}
@@ -536,37 +640,52 @@ const ReceiverDashboard = ({ stations = [] }) => {
                       {nearbyStations.map((station) => (
                         <motion.div
                           key={station.id}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: 1, y: [0, -8] }}
+                          transition={{
+                            y: {
+                              type: 'spring',
+                              stiffness: 200,
+                              damping: 20,
+                              repeat: Infinity,
+                              repeatType: 'reverse',
+                              duration: 1.5,
+                            },
+                          }}
                         >
                           <Marker
                             position={[station.lat, station.lng]}
-                            icon={station.recommended ? stationIconGreen : stationIconRed}
+                            icon={station.recommended && station.weatherSafe ? availableIcon : unavailableIcon}
                           >
                             <Popup>
-                              <div className="p-2">
-                                <h3 className="font-bold">{station.name}</h3>
-                                <p className="text-sm">{station.location}</p>
-                                <p className="text-sm">Power: {station.powerAvailable} kW</p>
-                                <p className="text-sm">Price: {station.pricePerKWh}</p>
-                                <p className="text-sm">
-                                  Recommended:{' '}
-                                  <span className={station.recommended ? 'text-green-600' : 'text-red-600'}>
-                                    {station.recommended ? 'Yes' : 'No'}
+                              <div className="p-2 max-w-[200px]">
+                                <h3 className="font-semibold text-sm">{station.name}</h3>
+                                <p className="text-xs">{station.location}</p>
+                                <p className="text-xs">Power: {station.powerAvailable} kW</p>
+                                <p className="text-xs">Price: {station.pricePerKWh}</p>
+                                <p className="text-xs">
+                                  Status:{' '}
+                                  <span className={station.recommended && station.weatherSafe ? 'text-green-600' : 'text-red-600'}>
+                                    {station.recommended && station.weatherSafe ? 'Recommended' : 'Not Recommended'}
                                   </span>
                                 </p>
-                                {station.arrivalTime && (
-                                  <p className="text-sm">Est. Arrival: {station.arrivalTime}</p>
+                                {station.weather && (
+                                  <p className="text-xs">Weather: {station.weather.description} ({station.weather.temp}°C)</p>
                                 )}
-                                <div className="mt-2">
-                                  <button
-                                    onClick={() => handleNavigate(station)}
-                                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                                  >
-                                    Navigate
-                                  </button>
-                                </div>
+                                {station.arrivalTime && (
+                                  <p className="text-xs">Arrival: {station.arrivalTime}</p>
+                                )}
+                                <button
+                                  onClick={() => handleNavigate(station)}
+                                  className={`mt-2 px-2 py-1 text-xs rounded text-white ${
+                                    station.recommended && station.weatherSafe
+                                      ? 'bg-green-600 hover:bg-green-700'
+                                      : 'bg-gray-400 cursor-not-allowed'
+                                  }`}
+                                  disabled={!(station.recommended && station.weatherSafe)}
+                                >
+                                  Navigate
+                                </button>
                               </div>
                             </Popup>
                           </Marker>
@@ -592,58 +711,56 @@ const ReceiverDashboard = ({ stations = [] }) => {
                     </motion.button>
                     <motion.button
                       onClick={fetchAvailabilityPredictions}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none"
+                      className="px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 focus:outline-none"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      View Availability Prediction
+                      Check Availability
                     </motion.button>
                   </div>
                   <div className="absolute bottom-4 left-4 z-[1000] flex space-x-2">
                     <motion.button
                       onClick={handleCenterOnUser}
-                      className="p-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none text-xs"
+                      className="p-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 focus:outline-none"
                       title="Center on My Location"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </motion.button>
                     <motion.button
                       onClick={handleClearPin}
-                      className="p-2 bg-red-600 text-white rounded-md shadow-sm hover:bg-red-700 focus:outline-none text-xs"
+                      className="p-2 bg-red-600 text-white rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
                       title="Clear Dropped Pin"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </motion.button>
                   </div>
-                  {navigating && (
+                  {navigating && selectedStation && (
                     <div
-                      className={`absolute bottom-4 left-0 right-0 mx-auto w-5/6 p-3 rounded-lg shadow-lg z-[1000] border ${
-                        isDarkMode
-                          ? 'bg-gray-800 text-gray-100 border-gray-600'
-                          : 'bg-white text-gray-900 border-gray-200'
+                      className={`absolute bottom-4 left-0 right-0 mx-auto w-11/12 sm:w-3/4 md:w-1/2 p-4 rounded-lg shadow-lg z-[1000] border ${
+                        isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <div>
                           <h3 className={`font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                            {selectedStation?.name}
+                            {selectedStation.name}
                           </h3>
-                          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {selectedStation?.location}
+                          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {selectedStation.location}
                           </p>
                         </div>
                         <motion.button
                           onClick={handleCancelNavigation}
-                          className={`px-3 py-1 rounded transition-colors ${
+                          className={`px-3 py-1 rounded text-sm ${
                             isDarkMode
                               ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -661,7 +778,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
             </div>
 
             <div className="mb-6">
-              <h2 className={`text-xl font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+              <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                 Nearby Charging Stations
               </h2>
               {isLoading ? (
