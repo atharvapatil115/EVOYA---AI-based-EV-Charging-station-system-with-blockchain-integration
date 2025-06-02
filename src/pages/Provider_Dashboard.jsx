@@ -1,8 +1,30 @@
-import { useState } from 'react';
-import { Home, Building, Clock, Shield, Zap, Users, BatteryCharging, ChevronRight, BarChart4 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useLocation } from 'react-router-dom';
+import {
+  Building,
+  Zap,
+  Users,
+  BatteryCharging,
+  ChevronRight,
+  BarChart4
+} from 'lucide-react';
 
 const ProviderDashboard = () => {
-  const [stations] = useState([
+  const location = useLocation();
+  const formData = location.state;
+
+  const [ownerInfo] = useState({
+    name: 'Monika Mohite',
+    email: 'monikamohite@gmail.com',
+    phone: '+91 8329706248',
+    company: 'EV Power Solutions',
+    address: '123 Main Street, Mumbai, India'
+  });
+
+
+
+  const [stations, setStations] = useState([
     {
       id: '1',
       name: 'Central EV Hub',
@@ -38,7 +60,15 @@ const ProviderDashboard = () => {
     }
   ]);
 
-  const [bookings] = useState([
+
+//   useEffect(() => {
+//   axios.get('http://localhost:5000/api/stations')
+//     .then(res => setStations(res.data))
+//     .catch(err => console.error('Fetch error:', err));
+// }, []);
+
+
+  const [bookings, setBookings] = useState([
     {
       id: 'B001',
       user: 'Raj Patel',
@@ -96,14 +126,22 @@ const ProviderDashboard = () => {
     }
   };
 
+  const handleBookingAction = (id, newStatus) => {
+    setBookings(prev =>
+      prev.map(booking =>
+        booking.id === id ? { ...booking, status: newStatus } : booking
+      )
+    );
+  };
+
   return (
     <>
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-md overflow-hidden mb-8">
+      <div className="bg-gradient-to-r from-green-600 to-lime-600 rounded-lg shadow-md overflow-hidden mb-8">
         <div className="px-6 py-5 sm:px-8 sm:py-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white sm:text-2xl">Provider Dashboard</h2>
-              <p className="text-indigo-100 text-sm mt-1">Manage your charging stations</p>
+              <p className="text-green-100 text-sm mt-1">Manage your charging stations</p>
             </div>
             <div className="hidden sm:block">
               <button className="bg-white bg-opacity-20 text-white text-sm px-4 py-2 rounded-md hover:bg-opacity-30 transition-colors">
@@ -112,181 +150,184 @@ const ProviderDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-indigo-900 bg-opacity-20 px-6 py-4 sm:px-8">
+        <div className="bg-green-900 bg-opacity-20 px-6 py-4 sm:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-white">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
-                <BatteryCharging className="h-5 w-5 text-white" />
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-indigo-100">Total Stations</p>
-                <p className="text-xl font-semibold">{stations.length}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-indigo-100">Power Delivered</p>
-                <p className="text-xl font-semibold">{stations.reduce((sum, s) => sum + s.powerUsed, 0)} kW</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-indigo-100">Total Users Today</p>
-                <p className="text-xl font-semibold">{totalUsers}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
-                <BarChart4 className="h-5 w-5 text-white" />
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-indigo-100">Revenue Today</p>
-                <p className="text-xl font-semibold">₹{totalRevenue.toLocaleString()}</p>
-              </div>
-            </div>
+            <InfoCard Icon={BatteryCharging} label="Total Stations" value={stations.length} />
+            <InfoCard Icon={Zap} label="Power Delivered" value={`${stations.reduce((sum, s) => sum + s.powerUsed, 0)} kW`} />
+            <InfoCard Icon={Users} label="Total Users Today" value={totalUsers} />
+            <InfoCard Icon={BarChart4} label="Revenue Today" value={`₹${totalRevenue.toLocaleString()}`} />
           </div>
         </div>
       </div>
-      
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Your Charging Stations</h2>
-          <button className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
-            View All
-          </button>
+
+      <SectionHeader title="Owner's Information" />
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {formData ? (
+            <>
+              <div><p className="text-sm text-gray-500">Name</p><p className="text-sm font-medium text-gray-900">{formData.name}</p></div>
+              <div><p className="text-sm text-gray-500">Phone</p><p className="text-sm font-medium text-gray-900">{formData.phone}</p></div>
+              <div><p className="text-sm text-gray-500">Email</p><p className="text-sm font-medium text-gray-900">{formData.email}</p></div>
+              <div><p className="text-sm text-gray-500">Address</p><p className="text-sm font-medium text-gray-900">{formData.address}</p></div>
+              <div><p className="text-sm text-gray-500">Opening Time</p><p className="text-sm font-medium text-gray-900">{formData.openingTime}</p></div>
+              <div><p className="text-sm text-gray-500">Closing Time</p><p className="text-sm font-medium text-gray-900">{formData.closingTime}</p></div>
+              <div><p className="text-sm text-gray-500">Charging Capacity</p><p className="text-sm font-medium text-gray-900">{formData.chargingCapacity} kW</p></div>
+              <div><p className="text-sm text-gray-500">Connector Types</p><p className="text-sm font-medium text-gray-900">{formData.connectorTypes?.join(', ')}</p></div>
+            </>
+          ) : (
+            Object.entries(ownerInfo).map(([key, value]) => (
+              <div key={key}>
+                <p className="text-sm text-gray-500 capitalize">{key}</p>
+                <p className="text-sm font-medium text-gray-900">{value}</p>
+              </div>
+            ))
+          )}
         </div>
-        
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {stations.map((station) => (
-              <li key={station.id}>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <Building className="h-6 w-6 text-indigo-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-indigo-600">{station.name}</p>
-                        <p className="text-sm text-gray-500">{station.location}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(station.status)}`}>
-                        {station.status}
-                      </span>
-                      <ChevronRight className="ml-4 h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="sm:col-span-1">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Zap className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                        <span>Power: {station.powerUsed}/{station.powerCapacity} kW</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1.5">
-                        <div 
-                          className="bg-indigo-600 h-2.5 rounded-full" 
-                          style={{ width: `${(station.powerUsed / station.powerCapacity) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Users className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                        <span>Users Today: {station.usersToday}</span>
-                      </div>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <BarChart4 className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                        <span>Revenue: {station.revenue}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
+      </div>
+
+      <SectionHeader title="Current Bookings" />
+      <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {['ID', 'User', 'Station', 'Time', 'Status', 'Actions'].map((header) => (
+                <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {bookings.filter(b => b.status === 'Upcoming').map((booking) => (
+              <tr key={booking.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{booking.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.user}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.station}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.startTime} ({booking.duration})</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                    {booking.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                  <button onClick={() => handleBookingAction(booking.id, 'In Progress')} className="text-green-600 hover:text-green-800">Accept</button>
+                  <button onClick={() => handleBookingAction(booking.id, 'Denied')} className="text-red-600 hover:text-red-800">Deny</button>
+                </td>
+              </tr>
             ))}
-          </ul>
-        </div>
+          </tbody>
+        </table>
       </div>
-      
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Recent Bookings</h2>
-          <button className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
-            View All
-          </button>
-        </div>
-      </div>
-      
-      <div className="flex flex-col">
-        <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Booking ID
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Station
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Revenue
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {bookings.map((booking) => (
-                    <tr key={booking.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {booking.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {booking.user}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {booking.station}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {booking.startTime} ({booking.duration})
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                          {booking.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {booking.revenue}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+
+      <SectionHeader title="Your Charging Stations" />
+      <StationList stations={stations} getStatusColor={getStatusColor} />
+
+      <SectionHeader title="Recent Bookings" />
+      <BookingTable bookings={bookings} getStatusColor={getStatusColor} />
     </>
   );
 };
+
+const InfoCard = ({ Icon, label, value }) => (
+  <div className="flex items-center">
+    <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
+      <Icon className="h-5 w-5 text-white" />
+    </div>
+    <div className="ml-3">
+      <p className="text-xs font-medium text-green-100">{label}</p>
+      <p className="text-xl font-semibold">{value}</p>
+    </div>
+  </div>
+);
+
+const SectionHeader = ({ title }) => (
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-medium text-gray-900">{title}</h2>
+    <button className="text-sm text-green-600 hover:text-green-800 hover:underline">View All</button>
+  </div>
+);
+
+const StationList = ({ stations, getStatusColor }) => (
+  <div className="bg-white shadow overflow-hidden sm:rounded-md mb-8">
+    <ul className="divide-y divide-gray-200">
+      {stations.map((station) => (
+        <li key={station.id} className="px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <Building className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-green-600">{station.name}</p>
+                <p className="text-sm text-gray-500">{station.location}</p>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(station.status)}`}>
+                {station.status}
+              </span>
+              <ChevronRight className="ml-4 h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StationStat icon={Zap} label={`Power: ${station.powerUsed}/${station.powerCapacity} kW`} percent={(station.powerUsed / station.powerCapacity) * 100} />
+            <StationStat icon={Users} label={`Users Today: ${station.usersToday}`} />
+            <StationStat icon={BarChart4} label={`Revenue: ${station.revenue}`} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+const StationStat = ({ icon: Icon, label, percent }) => (
+  <div className="sm:col-span-1">
+    <div className="flex items-center text-sm text-gray-500">
+      <Icon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+      <span>{label}</span>
+    </div>
+    {percent !== undefined && (
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1.5">
+        <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${percent}%` }}></div>
+      </div>
+    )}
+  </div>
+);
+
+const BookingTable = ({ bookings, getStatusColor }) => (
+  <div className="flex flex-col">
+    <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Booking ID', 'User', 'Station', 'Time', 'Status', 'Revenue'].map((heading) => (
+                  <th key={heading} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {bookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{booking.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.user}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.station}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.startTime} ({booking.duration})</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                      {booking.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{booking.revenue}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default ProviderDashboard;
