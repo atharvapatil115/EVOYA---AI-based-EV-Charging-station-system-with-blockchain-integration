@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, Moon, Sun } from 'lucide-react';
+import { User, Moon, Sun } from 'lucide-react';
 
-const Navbar = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+// Define props interface
+interface NavbarProps {
+  setActiveSection: (section: string) => void;
+  isDarkMode: boolean;
+  setIsDarkMode: (isDark: boolean) => void;
+  activeSection: string;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
 
   const handleProfileClick = () => {
     setIsProfileOpen(!isProfileOpen);
   };
 
-  const handleProfileOption = (option) => {
+  const handleProfileOption = (option: string) => {
     if (option === 'profile') {
       alert('Opening user profile');
     } else if (option === 'logout') {
@@ -33,7 +41,11 @@ const Navbar = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) 
           <button
             onClick={() => setActiveSection('home')}
             className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 hover:text-gray-900 transition-colors ${
-              activeSection === 'home' ? 'bg-blue-500 text-white hover:bg-blue-600' : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              activeSection === 'home'
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
             }`}
           >
             Dashboard
@@ -41,7 +53,11 @@ const Navbar = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) 
           <button
             onClick={() => setActiveSection('stations')}
             className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 hover:text-gray-900 transition-colors ${
-              activeSection === 'stations' ? 'bg-blue-500 text-white hover:bg-blue-600' : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              activeSection === 'stations'
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
             }`}
           >
             View Stations
@@ -49,7 +65,11 @@ const Navbar = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) 
           <button
             onClick={() => setActiveSection('ev-status')}
             className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 hover:text-gray-900 transition-colors ${
-              activeSection === 'ev-status' ? 'bg-blue-500 text-white hover:bg-blue-600' : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              activeSection === 'ev-status'
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : isDarkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
             }`}
           >
             EV Status

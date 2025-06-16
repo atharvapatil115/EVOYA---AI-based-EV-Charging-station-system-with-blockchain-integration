@@ -1,8 +1,24 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useState, FormEvent, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios, { AxiosError } from 'axios';
+
+// Define the form data interface
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  evModel: string;
+  batteryCapacity: string;
+  homeCharging: boolean;
+  preferredConnector: string;
+  avgDailyDistance: string;
+  password: string;
+  confirmPassword: string;
+  userType: 'ev_user' | 'provider';
+}
 
 const EVOwnerInfoPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     phone: '',
@@ -11,33 +27,57 @@ const EVOwnerInfoPage = () => {
     homeCharging: false,
     preferredConnector: 'Type 2',
     avgDailyDistance: '',
+    password: '',
+    confirmPassword: '',
+    userType: 'ev_user',
   });
-  
+
   const [showFirstModal, setShowFirstModal] = useState(false);
   const [showSecondModal, setShowSecondModal] = useState(false);
-  const [stationType, setStationType] = useState('');
-  
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const [error, setError] = useState<string | null>(null); // Allow string or null
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target as HTMLInputElement; // Type assertion for checkbox
+
     if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Form submitted with data:', formData);
-    setShowFirstModal(true);
+    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (!formData.password || !formData.confirmPassword) {
+      setError('Password and Confirm Password are required');
+      return;
+    }
+
+    // Prepare payload without confirmPassword
+    const { confirmPassword, ...payload } = formData;
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/users', payload, {
+        withCredentials: true, // Match backend's supports_credentials
+      });
+      console.log('Form submitted successfully:', response.data);
+      setShowFirstModal(true);
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error?: string }>; // Type Axios error
+      setError(axiosError.response?.data?.error || 'Registration failed');
+    }
   };
 
   const handleNoClick = () => {
     console.log('Navigating to dashboard');
-    navigate('/sign-in'); // Navigate to dashboard
+    navigate('/sign-in');
   };
 
   const handleYesClick = () => {
@@ -45,19 +85,25 @@ const EVOwnerInfoPage = () => {
     setShowSecondModal(true);
   };
 
-  const handleStationTypeSelect = (type = 'any') => {
-    setStationType(type);
+  const handleStationTypeSelect = async (type: 'commercial' | 'home' | 'any' = 'any') => {
     setShowSecondModal(false);
     console.log(`Selected station type: ${type}`);
-    
-    // Navigate to provider registration form with station type as a query parameter
-    navigate(`/provider-info?type=${type}`);
-    
-    // Alternatively, you can pass station type as state if you prefer:
-    // navigate('/provider-registration', { state: { stationType: type } });
+
+    try {
+      // Prepare payload without confirmPassword
+      const { confirmPassword, ...payload } = formData;
+      const providerData = { ...payload, stationType: type, userType: 'provider' as const };
+      const response = await axios.post('http://localhost:5000/api/stations', providerData, {
+        withCredentials: true, // Match backend's supports_credentials
+      });
+      console.log('Provider registration submitted:', response.data);
+      navigate(`/provider-info?type=${type}`);
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error?: string }>; // Type Axios error
+      setError(axiosError.response?.data?.error || 'Provider registration failed');
+    }
   };
 
-  // First Modal - Ask if user wants to register charging station
   const FirstModal = () => (
     <div className="fixed inset-0 z-10 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -69,9 +115,7 @@ const EVOwnerInfoPage = () => {
               <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                 <h3 className="text-lg font-medium leading-6 text-gray-900">Register Your Charging Station</h3>
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    Do you want to register your charging station as well?
-                  </p>
+                  <p className="text-sm text-gray-500">Do you want to register your charging station as well?</p>
                 </div>
               </div>
             </div>
@@ -97,7 +141,6 @@ const EVOwnerInfoPage = () => {
     </div>
   );
 
-  // Second Modal - Choose station type
   const SecondModal = () => (
     <div className="fixed inset-0 z-10 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -109,9 +152,7 @@ const EVOwnerInfoPage = () => {
               <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                 <h3 className="text-lg font-medium leading-6 text-gray-900">Choose Station Type</h3>
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    Please select your charging station type:
-                  </p>
+                  <p className="text-sm text-gray-500">Please select your charging station type:</p>
                 </div>
               </div>
             </div>
@@ -144,10 +185,30 @@ const EVOwnerInfoPage = () => {
           <h1 className="text-xl font-bold text-white">EV Owner Profile Setup</h1>
         </div>
         <div className="p-6">
-          <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -158,9 +219,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -171,9 +234,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
                 <input
                   type="tel"
                   name="phone"
@@ -184,9 +249,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="evModel" className="block text-sm font-medium text-gray-700">EV Model</label>
+                <label htmlFor="evModel" className="block text-sm font-medium text-gray-700">
+                  EV Model
+                </label>
                 <input
                   type="text"
                   name="evModel"
@@ -198,9 +265,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="batteryCapacity" className="block text-sm font-medium text-gray-700">Battery Capacity (kWh)</label>
+                <label htmlFor="batteryCapacity" className="block text-sm font-medium text-gray-700">
+                  Battery Capacity (kWh)
+                </label>
                 <input
                   type="number"
                   name="batteryCapacity"
@@ -211,9 +280,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="avgDailyDistance" className="block text-sm font-medium text-gray-700">Average Daily Distance (km)</label>
+                <label htmlFor="avgDailyDistance" className="block text-sm font-medium text-gray-700">
+                  Average Daily Distance (km)
+                </label>
                 <input
                   type="number"
                   name="avgDailyDistance"
@@ -224,9 +295,11 @@ const EVOwnerInfoPage = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="preferredConnector" className="block text-sm font-medium text-gray-700">Preferred Connector Type</label>
+                <label htmlFor="preferredConnector" className="block text-sm font-medium text-gray-700">
+                  Preferred Connector Type
+                </label>
                 <select
                   name="preferredConnector"
                   id="preferredConnector"
@@ -240,8 +313,38 @@ const EVOwnerInfoPage = () => {
                   <option value="CHAdeMO">CHAdeMO</option>
                 </select>
               </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  id="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
-            
+
             <div className="flex items-center mt-4">
               <input
                 id="homeCharging"
@@ -255,28 +358,28 @@ const EVOwnerInfoPage = () => {
                 I have home charging capability
               </label>
             </div>
-            
+
             <div className="pt-5">
               <div className="flex justify-end">
                 <button
                   type="button"
+                  onClick={() => navigate('/sign-in')}
                   className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   Cancel
                 </button>
                 <button
-                  type="button"
-                  onClick={handleSubmit}
+                  type="submit"
                   className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   Save & Continue
                 </button>
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-      
+
       {showFirstModal && <FirstModal />}
       {showSecondModal && <SecondModal />}
     </div>

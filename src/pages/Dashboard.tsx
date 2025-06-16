@@ -3,13 +3,46 @@ import { MapContainer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import L from 'leaflet';
+import L, { LatLngExpression, DivIcon } from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import Navbar from '../components/Navbar';
 import EVStatus from '../components/EVStatus';
+import Navbar from '../components/Navbar';
+
+// Define interfaces for TypeScript
+interface Location {
+  lat: number;
+  lng: number;
+}
+
+interface Weather {
+  description: string;
+  temp: number;
+}
+
+interface Station {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+  powerAvailable: number;
+  lastUpdated: string;
+  pricePerKWh: string;
+  connectorTypes: string[];
+  status: string;
+  lat: number;
+  lng: number;
+  totalSlots: number;
+  bookedSlots6AM_11AM: number;
+  bookedSlots11AM_4PM: number;
+  bookedSlots4PM_10PM: number;
+  recommended: boolean;
+  weatherSafe: boolean;
+  weather?: Weather;
+  arrivalTime?: string;
+}
 
 // Remove default Leaflet icon styles
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -17,48 +50,54 @@ L.Icon.Default.mergeOptions({
 });
 
 // Emoji-based markers using L.divIcon
-const userIcon = new L.divIcon({
+const userIcon = L.divIcon({
   html: '<span style="font-size: 24px; color: #ff0000;">📍</span>',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
-});
+}) as DivIcon;
 
-const navigationIcon = new L.divIcon({
+const navigationIcon = L.divIcon({
   html: '<span style="font-size: 24px; color: #0000ff;">📍</span>',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
-});
+}) as DivIcon;
 
-const pinIcon = new L.divIcon({
+const pinIcon = L.divIcon({
   html: '<span style="font-size: 24px; color: #ff4500;">📍</span>',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
-});
+}) as DivIcon;
 
-const availableIcon = new L.divIcon({
+const availableIcon = L.divIcon({
   html: '<span style="font-size: 24px; color: #32cd32;">🔰</span>',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
-});
+}) as DivIcon;
 
-const unavailableIcon = new L.divIcon({
+const unavailableIcon = L.divIcon({
   html: '<span style="font-size: 24px; color: #ff0000;">⚠️</span>',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
-});
+}) as DivIcon;
 
-// ViewStations component for displaying station cards
-const ViewStations = ({ stations, handleNavigate, isDarkMode }) => (
+// ViewStations component
+interface ViewStationsProps {
+  stations: Station[];
+  handleNavigate: (station: Station) => void;
+  isDarkMode: boolean;
+}
+
+const ViewStations: React.FC<ViewStationsProps> = ({ stations, handleNavigate, isDarkMode }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {stations.map((station) => (
       <motion.div
@@ -73,6 +112,7 @@ const ViewStations = ({ stations, handleNavigate, isDarkMode }) => (
         <p className="text-sm">Address: {station.address}</p>
         <p className="text-sm">Power: {station.powerAvailable} kW</p>
         <p className="text-sm">Price: {station.pricePerKWh}</p>
+        <p className="text-sm">Connectors: {station.connectorTypes.join(', ') || 'None'}</p>
         {station.recommended && station.weatherSafe ? (
           <p className="text-sm text-green-500 font-medium">Recommended: Yes (Safe to travel)</p>
         ) : (
@@ -100,18 +140,30 @@ const ViewStations = ({ stations, handleNavigate, isDarkMode }) => (
   </div>
 );
 
-// MapClickHandler for dropping pins
-const MapClickHandler = ({ setDroppedPin }) => {
+// MapClickHandler component
+interface MapClickHandlerProps {
+  setDroppedPin: (pin: Location | null) => void;
+}
+
+const MapClickHandler: React.FC<MapClickHandlerProps> = ({ setDroppedPin }) => {
   useMapEvents({
-    click(e) {
+    click(e: L.LeafletMouseEvent) {
       setDroppedPin({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
   return null;
 };
 
-// MapController for map resizing and bounds
-const MapController = ({ navigating, userLocation, nearbyStations, centerAndFitBounds, droppedPin }) => {
+// MapController component
+interface MapControllerProps {
+  navigating: boolean;
+  userLocation: Location | null;
+  nearbyStations: Station[];
+  centerAndFitBounds: boolean;
+  droppedPin: Location | null;
+}
+
+const MapController: React.FC<MapControllerProps> = ({ navigating, userLocation, nearbyStations, centerAndFitBounds, droppedPin }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -120,7 +172,7 @@ const MapController = ({ navigating, userLocation, nearbyStations, centerAndFitB
       if (centerAndFitBounds && userLocation && nearbyStations.length > 0) {
         const bounds = L.latLngBounds([
           droppedPin ? [droppedPin.lat, droppedPin.lng] : [userLocation.lat, userLocation.lng],
-          ...nearbyStations.map((station) => [station.lat, station.lng]),
+          ...nearbyStations.map((station) => [station.lat, station.lng] as LatLngExpression),
         ]);
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
       } else if (droppedPin) {
@@ -134,10 +186,15 @@ const MapController = ({ navigating, userLocation, nearbyStations, centerAndFitB
   return null;
 };
 
-// RoutingMachine for navigation routes
-const RoutingMachine = ({ userLocation, destination }) => {
+// RoutingMachine component
+interface RoutingMachineProps {
+  userLocation: Location | null;
+  destination: Station | null;
+}
+
+const RoutingMachine: React.FC<RoutingMachineProps> = ({ userLocation, destination }) => {
   const map = useMap();
-  const routingControlRef = useRef(null);
+  const routingControlRef = useRef<L.Routing.Control | null>(null);
 
   useEffect(() => {
     if (!userLocation || !destination || !map) return;
@@ -172,8 +229,12 @@ const RoutingMachine = ({ userLocation, destination }) => {
   return null;
 };
 
-// MapLayers for map tile types
-const MapLayers = ({ mapType }) => {
+// MapLayers component
+interface MapLayersProps {
+  mapType: 'street' | 'satellite' | 'hybrid';
+}
+
+const MapLayers: React.FC<MapLayersProps> = ({ mapType }) => {
   const map = useMap();
   const [tileError, setTileError] = useState(false);
 
@@ -227,14 +288,14 @@ const MapLayers = ({ mapType }) => {
 };
 
 // Sample station data
-const sampleStations = [
+const sampleStations: Station[] = [
   {
     id: '1',
     name: 'Central EV Hub',
     location: 'Downtown, Mumbai',
     address: '123 Main St, Mumbai',
     powerAvailable: 75,
-    lastUpdated: '2025-05-30 11:00',
+    lastUpdated: '2025-06-16T12:00:00Z',
     pricePerKWh: '₹15.50',
     connectorTypes: ['CCS', 'CHAdeMO', 'Type 2'],
     status: 'Available',
@@ -248,116 +309,40 @@ const sampleStations = [
     weatherSafe: true,
     weather: { description: 'clear sky', temp: 28 },
   },
-  {
-    id: '2',
-    name: 'Green Energy Station',
-    location: 'Bandra, Mumbai',
-    address: '456 Green Ave, Bandra, Mumbai',
-    powerAvailable: 50,
-    lastUpdated: '2025-05-30 11:05',
-    pricePerKWh: '₹14.75',
-    connectorTypes: ['CCS', 'Type 2'],
-    status: 'Available',
-    lat: 19.0596,
-    lng: 72.8295,
-    totalSlots: 6,
-    bookedSlots6AM_11AM: 3,
-    bookedSlots11AM_4PM: 5,
-    bookedSlots4PM_10PM: 2,
-    recommended: false,
-    weatherSafe: true,
-    weather: { description: 'light rain', temp: 27 },
-  },
-  {
-    id: '3',
-    name: 'Tech Park Chargers',
-    location: 'Powai, Mumbai',
-    address: '789 Tech Park Rd, Powai, Mumbai',
-    powerAvailable: 100,
-    lastUpdated: '2025-05-30 10:55',
-    pricePerKWh: '₹16.00',
-    connectorTypes: ['CCS', 'CHAdeMO', 'Type 2', 'Tesla'],
-    status: 'Available',
-    lat: 19.1176,
-    lng: 72.906,
-    totalSlots: 8,
-    bookedSlots6AM_11AM: 6,
-    bookedSlots11AM_4PM: 4,
-    bookedSlots4PM_10PM: 3,
-    recommended: true,
-    weatherSafe: false,
-    weather: { description: 'thunderstorm', temp: 26 },
-  },
-  {
-    id: '4',
-    name: 'Seaside Charging',
-    location: 'Marine Drive, Mumbai',
-    address: '321 Marine Dr, Mumbai',
-    powerAvailable: 60,
-    lastUpdated: '2025-05-30 10:50',
-    pricePerKWh: '₹15.25',
-    connectorTypes: ['CCS', 'Type 2'],
-    status: 'Available',
-    lat: 18.9442,
-    lng: 72.8235,
-    totalSlots: 5,
-    bookedSlots6AM_11AM: 4,
-    bookedSlots11AM_4PM: 3,
-    bookedSlots4PM_10PM: 1,
-    recommended: true,
-    weatherSafe: true,
-    weather: { description: 'partly cloudy', temp: 29 },
-  },
-  {
-    id: '5',
-    name: 'Highway Express Station',
-    location: 'Navi Mumbai',
-    address: '555 Eastern Express Hwy, Navi Mumbai',
-    powerAvailable: 90,
-    lastUpdated: '2025-05-30 11:00',
-    pricePerKWh: '₹14.50',
-    connectorTypes: ['CCS', 'CHAdeMO', 'Type 2'],
-    status: 'Available',
-    lat: 19.033,
-    lng: 73.0297,
-    totalSlots: 7,
-    bookedSlots6AM_11AM: 5,
-    bookedSlots11AM_4PM: 2,
-    bookedSlots4PM_10PM: 4,
-    recommended: true,
-    weatherSafe: true,
-    weather: { description: 'clear sky', temp: 28 },
-  },
 ];
 
-const ReceiverDashboard = ({ stations = [] }) => {
-  const [userLocation, setUserLocation] = useState(null);
-  const [selectedStation, setSelectedStation] = useState(null);
-  const [navigating, setNavigating] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
-  const [nearbyStations, setNearbyStations] = useState(stations.length > 0 ? stations : sampleStations);
-  const [mapType, setMapType] = useState('satellite');
-  const [activeSection, setActiveSection] = useState('home');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [centerAndFitBounds, setCenterAndFitBounds] = useState(false);
-  const [droppedPin, setDroppedPin] = useState(null);
-  const watchIdRef = useRef(null);
+interface ReceiverDashboardProps {
+  stations?: Station[];
+}
+
+const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ stations = [] }) => {
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [navigating, setNavigating] = useState<boolean>(false);
+  const [mapReady, setMapReady] = useState<boolean>(false);
+  const [nearbyStations, setNearbyStations] = useState<Station[]>(stations.length > 0 ? stations : sampleStations);
+  const [mapType, setMapType] = useState<'street' | 'satellite' | 'hybrid'>('satellite');
+  const [activeSection, setActiveSection] = useState<string>('home');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [centerAndFitBounds, setCenterAndFitBounds] = useState<boolean>(false);
+  const [droppedPin, setDroppedPin] = useState<Location | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   // Replace with your OpenWeatherMap API key
-  const WEATHER_API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY'; // Sign up at https://openweathermap.org/
+  const WEATHER_API_KEY = '927f530bb8f0a4a991cca33609d6f095';
 
   // Get user's initial location
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        (position: GeolocationPosition) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
         },
-        (error) => {
+        (error: GeolocationPositionError) => {
           console.error('Error getting location:', error);
           setUserLocation({ lat: 19.076, lng: 72.8777 }); // Default to Mumbai
         }
@@ -371,13 +356,13 @@ const ReceiverDashboard = ({ stations = [] }) => {
   useEffect(() => {
     if (navigating && 'geolocation' in navigator) {
       watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
+        (position: GeolocationPosition) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
         },
-        (error) => {
+        (error: GeolocationPositionError) => {
           console.error('Error watching location:', error);
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
@@ -396,7 +381,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
   const handleCenterOnUser = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        (position: GeolocationPosition) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -404,7 +389,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
           setDroppedPin(null);
           setCenterAndFitBounds(false);
         },
-        (error) => {
+        (error: GeolocationPositionError) => {
           console.error('Error getting location:', error);
           alert('Unable to get current location. Ensure location services are enabled.');
         }
@@ -421,7 +406,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
   };
 
   // Fetch weather data for a station
-  const fetchWeather = async (lat, lng) => {
+  const fetchWeather = async (lat: number, lng: number): Promise<{ safe: boolean; description: string; temp: number }> => {
     try {
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${WEATHER_API_KEY}&units=metric`
@@ -447,49 +432,50 @@ const ReceiverDashboard = ({ stations = [] }) => {
     }
   };
 
-  // Fetch nearby stations
-  const fetchNearbyStations = async () => {
-    const location = droppedPin || userLocation;
-    if (!location) {
-      alert('Location not available. Enable location services or drop a pin on the map.');
-      return;
-    }
-
-    setIsLoading(true);
+  // Fetch recommendation for a station using /api/test_prediction
+  const fetchStationRecommendation = async (station: Station): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:5000/api/nearby-stations', {
+      const now = new Date();
+      const hour = now.getHours();
+      let timeSlot: string;
+      if (6 <= hour && hour < 11) {
+        timeSlot = '6AM-11AM';
+      } else if (11 <= hour && hour < 16) {
+        timeSlot = '11AM-4PM';
+      } else if (16 <= hour && hour < 22) {
+        timeSlot = '4PM-10PM';
+      } else {
+        timeSlot = '11AM-4PM'; // Default
+      }
+
+      const bookedSlots = {
+        '6AM-11AM': station.bookedSlots6AM_11AM,
+        '11AM-4PM': station.bookedSlots11AM_4PM,
+        '4PM-10PM': station.bookedSlots4PM_10PM,
+      }[timeSlot] || 0;
+
+      const response = await fetch('http://localhost:5000/api/test_prediction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lat: location.lat,
-          lng: location.lng,
+          total_slots: station.totalSlots,
+          booked_slots: bookedSlots,
+          time_slot: timeSlot,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch nearby stations');
+        throw new Error('Failed to fetch recommendation');
       }
 
-      let data = await response.json();
-      data = await Promise.all(
-        data.map(async (station) => {
-          const weather = await fetchWeather(station.lat, station.lng);
-          return { ...station, weatherSafe: weather.safe, weather: { description: weather.description, temp: weather.temp } };
-        })
-      );
-      setNearbyStations(data);
-      setSelectedStation(null);
-      setNavigating(false);
-      setCenterAndFitBounds(true);
+      const data = await response.json();
+      console.log(`Recommendation for ${station.name}:`, data.recommended);
+      return data.recommended;
     } catch (error) {
-      console.error('Error fetching nearby stations:', error);
-      alert('Failed to fetch nearby stations. Showing default stations.');
-      setNearbyStations(sampleStations);
-      setCenterAndFitBounds(true);
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching recommendation:', error);
+      return false; // Fallback to false
     }
   };
 
@@ -497,41 +483,68 @@ const ReceiverDashboard = ({ stations = [] }) => {
   const fetchAvailabilityPredictions = async () => {
     const location = droppedPin || userLocation;
     if (!location) {
+      console.warn('No location available');
       alert('Location not available. Enable location services or drop a pin on the map.');
       return;
     }
 
     setIsLoading(true);
     try {
+      console.log('Fetching availability predictions for:', { lat: location.lat, lng: location.lng });
       const response = await fetch('http://localhost:5000/api/availability-prediction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           lat: location.lat,
           lng: location.lng,
         }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch availability predictions');
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch availability predictions: ${response.status} ${errorText}`);
       }
 
-      let data = await response.json();
-      data = await Promise.all(
-        data.map(async (station) => {
+      const data: Station[] = await response.json();
+      console.log('Availability predictions response:', data);
+      if (!Array.isArray(data)) {
+        console.warn('Received non-array response:', data);
+        throw new Error('Invalid response format: expected an array');
+      }
+      if (data.length === 0) {
+        console.warn('No stations returned from /api/availability-prediction');
+        alert('No charging stations found for this location. Showing default stations.');
+        setNearbyStations(sampleStations);
+        setCenterAndFitBounds(true);
+        return;
+      }
+
+      const updatedStations = await Promise.all(
+        data.map(async (station: Station) => {
+          console.log('Processing station:', station.name);
           const weather = await fetchWeather(station.lat, station.lng);
-          return { ...station, weatherSafe: weather.safe, weather: { description: weather.description, temp: weather.temp } };
+          const recommended = await fetchStationRecommendation(station);
+          return {
+            ...station,
+            weatherSafe: weather.safe,
+            weather: { description: weather.description, temp: weather.temp },
+            recommended,
+            connectorTypes: station.connectorTypes || [],
+          };
         })
       );
-      setNearbyStations(data);
+      console.log('Updated stations:', updatedStations);
+      setNearbyStations(updatedStations);
       setSelectedStation(null);
       setNavigating(false);
       setCenterAndFitBounds(true);
-    } catch (error) {
-      console.error('Error fetching availability predictions:', error);
-      alert('Failed to fetch availability predictions. Showing default stations.');
+    } catch (error: any) {
+      console.error('Error fetching availability predictions:', error.message, error.stack);
+      alert(`Failed to fetch availability predictions: ${error.message}. Showing default stations.`);
       setNearbyStations(sampleStations);
       setCenterAndFitBounds(true);
     } finally {
@@ -539,7 +552,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
     }
   };
 
-  const handleNavigate = (station) => {
+  const handleNavigate = (station: Station) => {
     setSelectedStation(station);
     setNavigating(true);
     setCenterAndFitBounds(false);
@@ -552,8 +565,8 @@ const ReceiverDashboard = ({ stations = [] }) => {
     setCenterAndFitBounds(false);
   };
 
-  const handleMapTypeChange = (e) => {
-    setMapType(e.target.value);
+  const handleMapTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMapType(e.target.value as 'street' | 'satellite' | 'hybrid');
   };
 
   return (
@@ -610,7 +623,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
                   )}
                   {userLocation ? (
                     <MapContainer
-                      center={[userLocation.lat, userLocation.lng]}
+                      center={[userLocation.lat, userLocation.lng] as LatLngExpression}
                       zoom={13}
                       className="h-full w-full"
                       style={{ height: '100%', width: '100%' }}
@@ -625,13 +638,13 @@ const ReceiverDashboard = ({ stations = [] }) => {
                         droppedPin={droppedPin}
                       />
                       <MapClickHandler setDroppedPin={setDroppedPin} />
-                      <Marker position={[userLocation.lat, userLocation.lng]} icon={navigating ? navigationIcon : userIcon}>
+                      <Marker position={[userLocation.lat, userLocation.lng] as LatLngExpression} icon={navigating ? navigationIcon : userIcon}>
                         <Popup>
                           <strong>{navigating ? 'Navigating' : 'Your Location'}</strong>
                         </Popup>
                       </Marker>
                       {droppedPin && (
-                        <Marker position={[droppedPin.lat, droppedPin.lng]} icon={pinIcon}>
+                        <Marker position={[droppedPin.lat, droppedPin.lng] as LatLngExpression} icon={pinIcon}>
                           <Popup>
                             <strong>Dropped Pin</strong>
                           </Popup>
@@ -654,7 +667,7 @@ const ReceiverDashboard = ({ stations = [] }) => {
                           }}
                         >
                           <Marker
-                            position={[station.lat, station.lng]}
+                            position={[station.lat, station.lng] as LatLngExpression}
                             icon={station.recommended && station.weatherSafe ? availableIcon : unavailableIcon}
                           >
                             <Popup>
@@ -701,14 +714,6 @@ const ReceiverDashboard = ({ stations = [] }) => {
                     </div>
                   )}
                   <div className="absolute top-4 right-4 z-[1000] flex flex-col space-y-2">
-                    <motion.button
-                      onClick={fetchNearbyStations}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 focus:outline-none"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      View Nearby Stations
-                    </motion.button>
                     <motion.button
                       onClick={fetchAvailabilityPredictions}
                       className="px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 focus:outline-none"

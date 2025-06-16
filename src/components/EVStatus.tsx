@@ -1,8 +1,22 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 
-const EVStatus = ({ isDarkMode }) => {
-  const ev = {
+// Define props interface
+interface EVStatusProps {
+  isDarkMode: boolean;
+}
+
+// Define EV data interface
+interface EV {
+  name: string;
+  batteryStatus: string;
+  owner: string;
+  ownerContact: string;
+  kmDriven: string;
+}
+
+const EVStatus: React.FC<EVStatusProps> = ({ isDarkMode }) => {
+  const ev: EV = {
     name: 'Tesla Model 3',
     batteryStatus: '85%',
     owner: 'Sarvadnya Mense',
@@ -31,9 +45,9 @@ const EVStatus = ({ isDarkMode }) => {
           <img
             src="/tesla2.png"
             alt={ev.name}
-            className="w-full h-62 object-cover rounded-lg "
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+            className="w-full h-64 object-cover rounded-lg"
+            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+              e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
             }}
           />
         </motion.div>
@@ -70,4 +84,4 @@ const EVStatus = ({ isDarkMode }) => {
   );
 };
 
-export default EVStatus
+export default EVStatus;

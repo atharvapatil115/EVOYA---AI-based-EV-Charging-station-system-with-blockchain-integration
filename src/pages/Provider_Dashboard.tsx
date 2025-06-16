@@ -10,11 +10,80 @@ import {
   BarChart4
 } from 'lucide-react';
 
-const ProviderDashboard = () => {
-  const location = useLocation();
-  const formData = location.state;
+// Define interfaces for data structures
+interface OwnerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  address: string;
+}
 
-  const [ownerInfo] = useState({
+interface Station {
+  id: string;
+  name: string;
+  location: string;
+  status: 'Online' | 'Maintenance' | 'Offline';
+  powerCapacity: number;
+  powerUsed: number;
+  revenue: string;
+  usersToday: number;
+  lastMaintenance: string;
+}
+
+interface Booking {
+  id: string;
+  user: string;
+  station: string;
+  startTime: string;
+  duration: string;
+  status: 'Completed' | 'In Progress' | 'Upcoming' | 'Denied';
+  revenue: string;
+}
+
+interface FormData {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  openingTime: string;
+  closingTime: string;
+  chargingCapacity: number;
+  connectorTypes: string[];
+  [key: string]: any; // Allow additional properties
+}
+
+interface InfoCardProps {
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number;
+}
+
+interface SectionHeaderProps {
+  title: string;
+}
+
+interface StationListProps {
+  stations: Station[];
+  getStatusColor: (status: string) => string;
+}
+
+interface StationStatProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  percent?: number;
+}
+
+interface BookingTableProps {
+  bookings: Booking[];
+  getStatusColor: (status: string) => string;
+}
+
+const ProviderDashboard: React.FC = () => {
+  const location = useLocation();
+  const formData = location.state as FormData | null;
+
+  const [ownerInfo] = useState<OwnerInfo>({
     name: 'Monika Mohite',
     email: 'monikamohite@gmail.com',
     phone: '+91 8329706248',
@@ -22,9 +91,7 @@ const ProviderDashboard = () => {
     address: '123 Main Street, Mumbai, India'
   });
 
-
-
-  const [stations, setStations] = useState([
+  const [stations, setStations] = useState<Station[]>([
     {
       id: '1',
       name: 'Central EV Hub',
@@ -60,15 +127,14 @@ const ProviderDashboard = () => {
     }
   ]);
 
+  // Commented-out useEffect for fetching stations
+  // useEffect(() => {
+  //   axios.get('http://localhost:5000/api/stations')
+  //     .then(res => setStations(res.data))
+  //     .catch(err => console.error('Fetch error:', err));
+  // }, []);
 
-//   useEffect(() => {
-//   axios.get('http://localhost:5000/api/stations')
-//     .then(res => setStations(res.data))
-//     .catch(err => console.error('Fetch error:', err));
-// }, []);
-
-
-  const [bookings, setBookings] = useState([
+  const [bookings, setBookings] = useState<Booking[]>([
     {
       id: 'B001',
       user: 'Raj Patel',
@@ -108,13 +174,13 @@ const ProviderDashboard = () => {
   ]);
 
   const totalRevenue = stations.reduce((sum, station) => {
-    const revenue = parseInt(station.revenue.replace(/[^\d]/g, ''));
+    const revenue = parseInt(station.revenue.replace(/[^\d]/g, '')) || 0;
     return sum + revenue;
   }, 0);
 
   const totalUsers = stations.reduce((sum, station) => sum + station.usersToday, 0);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'Online': return 'bg-green-100 text-green-800';
       case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
@@ -126,7 +192,7 @@ const ProviderDashboard = () => {
     }
   };
 
-  const handleBookingAction = (id, newStatus) => {
+  const handleBookingAction = (id: string, newStatus: Booking['status']) => {
     setBookings(prev =>
       prev.map(booking =>
         booking.id === id ? { ...booking, status: newStatus } : booking
@@ -172,7 +238,7 @@ const ProviderDashboard = () => {
               <div><p className="text-sm text-gray-500">Opening Time</p><p className="text-sm font-medium text-gray-900">{formData.openingTime}</p></div>
               <div><p className="text-sm text-gray-500">Closing Time</p><p className="text-sm font-medium text-gray-900">{formData.closingTime}</p></div>
               <div><p className="text-sm text-gray-500">Charging Capacity</p><p className="text-sm font-medium text-gray-900">{formData.chargingCapacity} kW</p></div>
-              <div><p className="text-sm text-gray-500">Connector Types</p><p className="text-sm font-medium text-gray-900">{formData.connectorTypes?.join(', ')}</p></div>
+              <div><p className="text-sm text-gray-500">Connector Types</p><p className="text-sm font-medium text-gray-900">{formData.connectorTypes?.join(', ') ?? 'N/A'}</p></div>
             </>
           ) : (
             Object.entries(ownerInfo).map(([key, value]) => (
@@ -226,7 +292,7 @@ const ProviderDashboard = () => {
   );
 };
 
-const InfoCard = ({ Icon, label, value }) => (
+const InfoCard: React.FC<InfoCardProps> = ({ Icon, label, value }) => (
   <div className="flex items-center">
     <div className="flex-shrink-0 h-10 w-10 rounded-md bg-white bg-opacity-20 flex items-center justify-center">
       <Icon className="h-5 w-5 text-white" />
@@ -238,14 +304,14 @@ const InfoCard = ({ Icon, label, value }) => (
   </div>
 );
 
-const SectionHeader = ({ title }) => (
+const SectionHeader: React.FC<SectionHeaderProps> = ({ title }) => (
   <div className="flex items-center justify-between mb-4">
     <h2 className="text-lg font-medium text-gray-900">{title}</h2>
     <button className="text-sm text-green-600 hover:text-green-800 hover:underline">View All</button>
   </div>
 );
 
-const StationList = ({ stations, getStatusColor }) => (
+const StationList: React.FC<StationListProps> = ({ stations, getStatusColor }) => (
   <div className="bg-white shadow overflow-hidden sm:rounded-md mb-8">
     <ul className="divide-y divide-gray-200">
       {stations.map((station) => (
@@ -278,7 +344,7 @@ const StationList = ({ stations, getStatusColor }) => (
   </div>
 );
 
-const StationStat = ({ icon: Icon, label, percent }) => (
+const StationStat: React.FC<StationStatProps> = ({ icon: Icon, label, percent }) => (
   <div className="sm:col-span-1">
     <div className="flex items-center text-sm text-gray-500">
       <Icon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
@@ -292,7 +358,7 @@ const StationStat = ({ icon: Icon, label, percent }) => (
   </div>
 );
 
-const BookingTable = ({ bookings, getStatusColor }) => (
+const BookingTable: React.FC<BookingTableProps> = ({ bookings, getStatusColor }) => (
   <div className="flex flex-col">
     <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">

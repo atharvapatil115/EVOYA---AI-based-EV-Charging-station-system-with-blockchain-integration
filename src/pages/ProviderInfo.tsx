@@ -31,6 +31,9 @@ interface FormData {
   description: string;
   stationName: string;
   connectorTypes: string[];
+  password: string;
+  confirmPassword: string;
+  userType: string;
 }
 
 interface LocationMarkerProps {
@@ -96,8 +99,11 @@ const ProviderInfoPage: React.FC = () => {
     description: '',
     stationName: '',
     connectorTypes: [],
+    password: '',
+    confirmPassword: '',
+    userType: 'provider',
   });
-
+  const [error, setError] = useState<string | null>(null);
   const [defaultCenter, setDefaultCenter] = useState<[number, number]>([51.505, -0.09]);
   const [mapKey, setMapKey] = useState(0);
 
@@ -127,29 +133,38 @@ const ProviderInfoPage: React.FC = () => {
     }
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!formData.location) {
-    alert('Please select a location on the map.');
-    return;
-  }
-  console.log('Form data being sent:', JSON.stringify(formData, null, 2));
-  try {
-    const response = await axios.post('http://localhost:5000/api/stations', formData);
-    console.log('Form submitted successfully:', response.data);
-    navigate('/Provider_Dashboard'); // Update to your dashboard
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
-    console.error('Error submitting form:', {
-      message: errorMessage,
-      status: error.response?.status,
-      response: error.response?.data,
-      error: error.toString(),
-      stack: error.stack
-    });
-    alert(`Failed to save station data: ${errorMessage}`);
-  }
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (!formData.password || !formData.confirmPassword) {
+      setError('Password and Confirm Password are required');
+      return;
+    }
+    if (!formData.location) {
+      setError('Please select a location on the map.');
+      return;
+    }
+
+    // Prepare payload without confirmPassword
+    const { confirmPassword, ...payload } = formData;
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/stations', payload, {
+        withCredentials: true, // Match backend's supports_credentials
+      });
+      console.log('Form submitted successfully:', response.data);
+      navigate('/Provider_Dashboard');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
+      setError(`Failed to save station data: ${errorMessage}`);
+    }
+  };
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -175,6 +190,20 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -215,6 +244,36 @@ const handleSubmit = async (e: React.FormEvent) => {
                   name="email"
                   id="email"
                   value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  id="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
                   onChange={handleChange}
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
@@ -367,6 +426,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <div className="flex justify-end">
                 <button
                   type="button"
+                  onClick={() => navigate('/sign-in')}
                   className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   Cancel

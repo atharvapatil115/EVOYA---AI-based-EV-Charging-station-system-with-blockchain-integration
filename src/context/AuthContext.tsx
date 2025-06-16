@@ -14,34 +14,21 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<User>;
-  signUp: (email: string, password: string, name: string) => Promise<User>;
-  signOut: () => void;
-  setUserType: (type: 'provider' | 'user') => void;
-  setProviderType: (type: 'commercial' | 'home') => void;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    userType: 'provider' | 'user',
+    extraData: any
+  ) => Promise<User>;
+  signOut: () => Promise<void>;
+  setUserType: (type: 'provider' | 'user') => Promise<void>;
+  setProviderType: (type: 'commercial' | 'home') => Promise<void>;
   switchUserMode: () => void;
   isAuthenticated: boolean;
   error: string | null;
   setError: (error: string | null) => void;
 }
-
-// Mock database for users (in a real app, this would be a backend API)
-let usersDB: User[] = [
-  {
-    id: '1',
-    email: 'test@example.com',
-    name: 'Test User',
-    userType: 'user',
-    vehicle: 'Tesla Model 3'
-  },
-  {
-    id: '2',
-    email: 'provider@example.com',
-    name: 'Test Provider',
-    userType: 'provider',
-    providerType: 'commercial',
-    vehicle: 'Tesla Model S'
-  }
-];
 
 // Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +42,15 @@ export function useAuth() {
   return context;
 }
 
+// Email validation regex
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Password validation (at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// API base URL
+const API_BASE_URL = 'http://localhost:5000/api';
+
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -65,117 +61,239 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for existing user session on load
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-      setActiveMode(JSON.parse(savedUser).userType);
-    }
-    setLoading(false);
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/current-user`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser({
+            id: user.user_id,
+            email: user.email || '',
+            name: user.name,
+            userType: user.userType,
+          });
+          setIsAuthenticated(true);
+          setActiveMode(user.userType);
+          console.log('Loaded currentUser from API:', { ...user, password: '****' });
+        } else {
+          console.log('No active session found');
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        setError('Failed to fetch current user');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCurrentUser();
   }, []);
-
-  // Save user to localStorage when it changes
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-  }, [currentUser]);
 
   // Sign in function
   const signIn = async (email: string, password: string): Promise<User> => {
     setLoading(true);
-    
-    // In a real app, this would be an API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const user = usersDB.find(u => u.email === email);
-        
-        if (user) {
-          setCurrentUser(user);
-          setActiveMode(user.userType);
-          setIsAuthenticated(true);
-          setLoading(false);
-          resolve(user);
-        } else {
-          setError('Invalid email or password');
-          setLoading(false);
-          reject(new Error('Invalid email or password'));
-        }
-      }, 1000);
-    });
+    setError(null);
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      setLoading(false);
+      setError('Invalid email format');
+      console.log('Email validation failed:', email);
+      throw new Error('Invalid email format');
+    }
+
+    console.log('Sign-in attempt with email:', email);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/signin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Sign-in successful for:', email);
+        const user = {
+          id: data.user_id,
+          email,
+          name: data.name,
+          userType: data.userType,
+        };
+        setCurrentUser(user);
+        setActiveMode(data.userType);
+        setIsAuthenticated(true);
+        setLoading(false);
+        return user;
+      } else {
+        console.log('Sign-in failed:', data.error);
+        setError(data.error || 'Authentication failed');
+        setLoading(false);
+        throw new Error(data.error || 'Authentication failed');
+      }
+    } catch (error) {
+      console.error('Error during sign-in:', error);
+      setError('Failed to sign in. Please check your connection or try again.');
+      setLoading(false);
+      throw error;
+    }
   };
 
   // Sign up function
-  const signUp = async (email: string, password: string, name: string): Promise<User> => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    userType: 'provider' | 'user',
+    extraData: any
+  ): Promise<User> => {
     setLoading(true);
-    
-    // In a real app, this would be an API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const existingUser = usersDB.find(u => u.email === email);
-        
-        if (existingUser) {
-          setError('Email already in use');
-          setLoading(false);
-          reject(new Error('Email already in use'));
-        } else {
-          const newUser: User = {
-            id: Date.now().toString(),
-            email,
-            name,
-            userType: 'user' // Default type, will be updated later
-          };
-          
-          usersDB.push(newUser);
-          setCurrentUser(newUser);
-          setIsAuthenticated(true);
-          setLoading(false);
-          resolve(newUser);
-        }
-      }, 1000);
-    });
+    setError(null);
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+      setLoading(false);
+      setError('Invalid email format');
+      console.log('Email validation failed:', email);
+      throw new Error('Invalid email format');
+    }
+
+    // Validate password strength
+    if (!passwordRegex.test(password)) {
+      setLoading(false);
+      setError(
+        'Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character'
+      );
+      console.log('Password validation failed:', password);
+      throw new Error('Password does not meet requirements');
+    }
+
+    try {
+      const endpoint = userType === 'provider' ? '/stations' : '/users';
+      const payload = {
+        email,
+        password,
+        name,
+        userType,
+        ...extraData,
+      };
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Sign-up successful for:', email);
+        const user = {
+          id: userType === 'provider' ? data.provider_id : data.user_id,
+          email,
+          name,
+          userType,
+        };
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        setActiveMode(userType);
+        setLoading(false);
+        return user;
+      } else {
+        console.log('Sign-up failed:', data.error);
+        setError(data.error || 'Registration failed');
+        setLoading(false);
+        throw new Error(data.error || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Error during sign-up:', error);
+      setError('Failed to sign up. Please check your connection or try again.');
+      setLoading(false);
+      throw error;
+    }
   };
 
   // Sign out function
-  const signOut = () => {
+  const signOut = async (): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/signout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        console.log('User signed out via API');
+      } else {
+        console.error('Sign-out failed:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error during sign-out:', error);
+    }
     setCurrentUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('currentUser');
+    setActiveMode('user');
   };
 
   // Set user type
-  const setUserType = (type: 'provider' | 'user') => {
+  const setUserType = async (type: 'provider' | 'user'): Promise<void> => {
     if (currentUser) {
-      const updatedUser = { ...currentUser, userType: type };
-      setCurrentUser(updatedUser);
-      setActiveMode(type);
-      
-      // Update in the "database"
-      usersDB = usersDB.map(user => 
-        user.id === currentUser.id ? updatedUser : user
-      );
+      try {
+        const response = await fetch(`${API_BASE_URL}/update-user-type`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: currentUser.id, userType: type }),
+        });
+        if (response.ok) {
+          const updatedUser = { ...currentUser, userType: type };
+          setCurrentUser(updatedUser);
+          setActiveMode(type);
+          console.log('User type updated via API:', { email: currentUser.email, userType: type });
+        } else {
+          console.error('Failed to update user type:', await response.json());
+          setError('Failed to update user type');
+        }
+      } catch (error) {
+        console.error('Error updating user type:', error);
+        setError('Failed to update user type. Please check your connection.');
+      }
     }
   };
 
   // Set provider type
-  const setProviderType = (type: 'commercial' | 'home') => {
+  const setProviderType = async (type: 'commercial' | 'home'): Promise<void> => {
     if (currentUser) {
-      const updatedUser = { ...currentUser, providerType: type };
-      setCurrentUser(updatedUser);
-      
-      // Update in the "database"
-      usersDB = usersDB.map(user => 
-        user.id === currentUser.id ? updatedUser : user
-      );
+      try {
+        const response = await fetch(`${API_BASE_URL}/update-provider-type`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: currentUser.id, providerType: type }),
+        });
+        if (response.ok) {
+          const updatedUser = { ...currentUser, providerType: type };
+          setCurrentUser(updatedUser);
+          console.log('Provider type updated via API:', { email: currentUser.email, providerType: type });
+        } else {
+          console.error('Failed to update provider type:', await response.json());
+          setError('Failed to update provider type');
+        }
+      } catch (error) {
+        console.error('Error updating provider type:', error);
+        setError('Failed to update provider type. Please check your connection.');
+      }
     }
   };
 
-  // Switch between user and provider mode (for providers)
+  // Switch between user and provider mode
   const switchUserMode = () => {
     if (currentUser?.userType === 'provider') {
       setActiveMode(activeMode === 'provider' ? 'user' : 'provider');
+      console.log('Switched mode to:', activeMode === 'provider' ? 'user' : 'provider');
     }
   };
 
@@ -190,7 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switchUserMode,
     isAuthenticated,
     error,
-    setError
+    setError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,52 +1,42 @@
-import { useNavigate } from 'react-router-dom'; 
 import { Zap, Battery } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-const UserTypePage = () => {
+const UserType = () => {
   const navigate = useNavigate();
-  const { setUserType } = useAuth();
 
-  const handleUserTypeSelection = (type:any) => {
-    setUserType(type);
-    
-    if (type === 'provider') {
-  navigate('/provider-type');
-} else {
-  navigate('/ev-owner-info');
-}
-  }
+  const handleEVUser = () => navigate('/ev-user-signup', { state: { userType: 'ev_user' } });
+  const handleProvider = () => navigate('/provider-info', { state: { userType: 'provider' } });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Choose Your Account Type</h1>
-        <div className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center">Select User Type</h1>
+        <div className="mt-8 space-y-6">
           <button
-            onClick={() => handleUserTypeSelection('provider')}
-            className="w-full bg-white hover:bg-green-50 text-left p-6 rounded-lg shadow-md border border-gray-200 transition duration-300 transform hover:-translate-y-1"
+            onClick={handleEVUser}
+            className="w-full p-4 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
-            <div className="flex items-center">
-              <div className="bg-green-100 p-4 rounded-full">
-                <Zap size={24} className="text-green-600" />
+            <div className="flex items-center justify-center">
+              <div className="mr-2">
+                <Zap size={24} />
               </div>
-              <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-900">Charging Provider</h2>
-                <p className="text-gray-600 mt-1">Offer your charging station to EV owners</p>
+              <div>
+                <h2 className="text-xl font-semibold">EV User</h2>
+                <p className="text-sm">Sign up as an electric vehicle user</p>
               </div>
             </div>
           </button>
-          
           <button
-            onClick={() => handleUserTypeSelection('user')}
-            className="w-full bg-white hover:bg-green-50 text-left p-6 rounded-lg shadow-md border border-gray-200 transition duration-300 transform hover:-translate-y-1"
+            onClick={handleProvider}
+            className="w-full p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <div className="flex items-center">
-              <div className="bg-green-100 p-4 rounded-full">
-                <Battery size={24} className="text-green-600" />
+            <div className="flex items-center justify-center">
+              <div className="mr-2">
+                <Battery size={24} />
               </div>
-              <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-900">EV Owner</h2>
-                <p className="text-gray-600 mt-1">Find and use available charging stations</p>
+              <div>
+                <h2 className="text-xl font-semibold">Provider</h2>
+                <p className="text-sm">Sign up as a charging station provider</p>
               </div>
             </div>
           </button>
@@ -56,4 +46,4 @@ const UserTypePage = () => {
   );
 };
 
-export default UserTypePage;
+export default UserType;
