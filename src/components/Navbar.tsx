@@ -36,7 +36,7 @@ const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDark
       }`}
     >
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="text-xl font-bold">EV Connect</div>
+        <div className="text-xl font-bold">EVOYA</div>
         <div className="flex items-center space-x-6">
           <button
             onClick={() => setActiveSection('home')}

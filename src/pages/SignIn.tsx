@@ -72,7 +72,7 @@ const SignInPage = () => {
             </div>
           </div>
           <p className="mt-2 text-sm text-gray-600">
-            <span className="font-medium text-green-600">EV Connect</span> - Connecting EV Users & Providers
+            <span className="font-medium text-green-600">EVOYA </span> - Connecting EV Users & Providers
           </p>
         </div>
 

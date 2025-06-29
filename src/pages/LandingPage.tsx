@@ -13,9 +13,9 @@ interface LandingPageProps {
 
 // Sample carousel images
 const carouselImages = [
-  { src: 'https://images.unsplash.com/photo-1625758850481-4b827c5e7d4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', alt: 'EV Charging Station' },
-  { src: 'https://images.unsplash.com/photo-1612902376491-7b7b42414276?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', alt: 'Electric Vehicle' },
-  { src: 'https://images.unsplash.com/photo-1620241608680-5f7a9a9b1e1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', alt: 'Charging Port' },
+  { src: 'https://images.unsplash.com/photo-1615903214534-582a77a2a85e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGV2JTIwY2hhcmdlcnxlbnwwfHwwfHx8MA%3D%3D', alt: 'EV Charging Station' },
+  { src: 'https://images.unsplash.com/photo-1631347826177-de288776ed3b?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', alt: 'Electric Vehicle' },
+  { src: 'https://media.istockphoto.com/id/1564615208/photo/ev-charging-stations-or-electric-vehicle-recharging-stations-with-graphic-display.jpg?s=612x612&w=0&k=20&c=Q0abYEWywvzsbtNIqDeGZfQNkH9kXmVhvQAQkqQS43w=', alt: 'Charging Port' },
 ];
 
 // Feature data
@@ -89,7 +89,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
 
   // Typewriter effect for hero headline
   const [headlineText, setHeadlineText] = useState('');
-  const fullHeadline = 'Welcome to EV Connect';
+  const fullHeadline = 'Welcome to EVOYA';
   useEffect(() => {
     let index = 0;
     const interval = setInterval(() => {
@@ -117,7 +117,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
             whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ type: 'spring', stiffness: 300 }}
           >
-            EV Connect
+            EVOYA 
           </motion.div>
           <motion.button
             onClick={() => setIsDarkMode(!isDarkMode)}
@@ -183,12 +183,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
           className="text-center mb-12 z-10 relative"
         >
           <h2 className={`text-3xl font-bold mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-            About EV Connect
+            About EVOYA 
           </h2>
           <p className={`text-lg max-w-3xl mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            EV Connect is a cutting-edge platform designed to simplify the electric vehicle charging experience. Whether
+            EVOYA  is a cutting-edge platform designed to simplify the electric vehicle charging experience. Whether
             you're searching for nearby charging stations, navigating to a safe and available charger, or monitoring your
-            EV's status, EV Connect has you covered.
+            EV's status, EVOYA  has you covered.
           </p>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 z-10 relative">
@@ -227,7 +227,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
           className="container mx-auto px-4 sm:px-6 lg:px-8 z-10 relative"
         >
           <h2 className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-            Explore EV Connect
+            Explore EVOYA 
           </h2>
           <Carousel
             showThumbs={false}
@@ -316,7 +316,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
             Ready to Charge?
           </h2>
           <p className={`text-lg mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Log in to access your personalized EV Connect dashboard and start exploring charging stations now.
+            Log in to access your personalized EVOYA  dashboard and start exploring charging stations now.
           </p>
           <motion.button
             onClick={handleLogin}
@@ -357,7 +357,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setIsDarkMode }) 
           transition={{ duration: 0.6 }}
           className="container mx-auto px-4 text-center z-10 relative"
         >
-          <p className="mb-4">© 2025 EV Connect. Empowering electric vehicle journeys.</p>
+          <p className="mb-4">© 2025 EVOYA . Empowering electric vehicle journeys.</p>
           <div className="flex justify-center space-x-4">
             {['Twitter', 'LinkedIn', 'GitHub'].map((platform) => (
               <motion.a
