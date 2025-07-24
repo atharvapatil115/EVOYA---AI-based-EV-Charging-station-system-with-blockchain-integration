@@ -11,15 +11,15 @@
 
 ## 🧠 Vision
 
-> The electric vehicle (EV) industry is booming — but charging infrastructure is struggling to keep up.  
+> The electric vehicle (EV) industry is booming,but charging infrastructure is struggling to keep up.  
 This project introduces a **smart, scalable EV charging solution** to tackle the most pressing challenges faced by EV users and operators.
 
 ✨ We aim to deliver:
 
-- 🔁 **Intelligent Scheduling** — minimize wait time, maximize efficiency.
-- 📡 **Real-time Monitoring** — see what’s happening at any station, anytime.
-- ⚡ **AI-Based Load Balancing** — smart power distribution.
-- 🎯 **Clean, User-Centric Interfaces** — for users and admins alike.
+- 🔁 **Intelligent Scheduling** :minimize wait time, maximize efficiency.
+- 📡 **Real-time Monitoring** : see what’s happening at any station, anytime.
+- ⚡ **AI-Based Load Balancing** : smart power distribution.
+- 🎯 **Clean, User-Centric Interfaces** : for users and admins alike.
 
 ---
 # <center> Prototype Screenshots
@@ -143,12 +143,10 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 
 | Name              | Role |
 |-------------------|------|
-| 👩‍💻 Sarvadnya Mense   | Developer |
-| 🧑‍💻 Atharva Patil     | Developer |
-| 👨‍💻 Arya Khobragade   | Developer |
-| 👨‍💻 Aaryan Mane       | Developer |
-| 👩‍💻 Monika Mohite     | Developer |
-| 👩‍💻 Himani Salunkhe   | Developer |
+| 👩‍💻 Sarvadnya Mense   | Jhata developer |
+| 🧑‍💻 Atharva Patil     | ML model development, Web Development |
+| 👨‍💻 Arya Khobragade   | Blockchain Development|
+| 👩‍💻 Monika Mohite     | Web, Android Development |
 
 ---
 
