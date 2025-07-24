@@ -45,7 +45,7 @@ const EVStatus: React.FC<EVStatusProps> = ({ isDarkMode }) => {
           <img
             src="/tesla2.png"
             alt={ev.name}
-            className="w-full h-64 object-cover rounded-lg"
+            className="w-full h-45 object-cover rounded-lg"
             onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
               e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
             }}

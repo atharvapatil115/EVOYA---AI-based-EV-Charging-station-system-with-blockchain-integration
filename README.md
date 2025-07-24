@@ -1,95 +1,136 @@
-# ⚡ Smart EV Charging Station Management System 🚗🔋
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&center=true&vCenter=true&width=435&lines=Smart+EV+Charging+Station;By+Team+SustainCharge" alt="Typing SVG" />
+</p>
 
-> Revolutionizing EV infrastructure — A smart, scalable charging solution developed for the **K-Impact Innovation Challenge 2025** 🌱
-
----
-
-## 🧠 Project Vision
-
-The electric mobility revolution is here, but the infrastructure isn't keeping up.
-
-Our system aims to solve the real-world problem of inefficient EV charging through:
-
-- Intelligent scheduling
-- Real-time monitoring
-- Dynamic load balancing using AI
-- Clean, scalable user experience
-
-This project is designed to empower both **EV users** and **charging station operators** with data-driven control and sustainability in mind 🌍⚡
+<p align="center">
+  ⚡ A smart and sustainable way to manage EV charging stations <br>
+  👨‍💻 Developed by Team EVOYA 
+</p>
 
 ---
 
-## 🔍 Problem Statement
+## 🧠 Vision
 
-Most EV charging stations lack:
+> The electric vehicle (EV) industry is booming — but charging infrastructure is struggling to keep up.  
+This project introduces a **smart, scalable EV charging solution** to tackle the most pressing challenges faced by EV users and operators.
 
-- ❌ Real-time availability tracking  
-- ❌ Slot booking  
-- ❌ Load optimization  
-- ❌ User-centric design  
+✨ We aim to deliver:
 
-Our solution fills these gaps with a seamless, smart management platform built with powerful technologies and thoughtful UX.
-
----
-
-## 💡 Key Features
-
-- 🧾 **User Registration & Authentication**
-- 🗓️ **Advanced Slot Booking** (Location + Time)
-- 📍 **Charging Station Map UI**
-- 📊 **Admin Dashboard** (Usage, Load, Analytics)
-- ⚡ **Live Power Monitoring & Control**
-- 🧠 **AI-Based Load Prediction & Clustering**
-- 📱 **Responsive UI** for mobile/desktop
+- 🔁 **Intelligent Scheduling** — minimize wait time, maximize efficiency.
+- 📡 **Real-time Monitoring** — see what’s happening at any station, anytime.
+- ⚡ **AI-Based Load Balancing** — smart power distribution.
+- 🎯 **Clean, User-Centric Interfaces** — for users and admins alike.
 
 ---
 
-## 🔧 Tech Stack
+## 🧩 The Problem We're Solving
 
-| Layer          | Technologies Used |
-|----------------|------------------|
-| 🎨 Frontend     | React.js, Tailwind CSS |
-| 🧠 AI/ML        | Scikit-learn (KNN, Clustering) |
-| 🔙 Backend      | Flask (Python), Node.js, Express.js |
-| 🗄️ Database      | MongoDB / Firebase (TBD) |
-| 📡 APIs & Realtime | WebSockets / REST APIs |
-| ☁️ Hosting & DevOps | GitHub, Render / Vercel / Railway |
+| ❌ Current Issues                        | ✅ Our Solution                        |
+|----------------------------------------|----------------------------------------|
+| ❌ No real-time availability tracking   | ✅ Live station monitoring              |
+| ❌ No pre-booking option                | ✅ Smart slot booking                   |
+| ❌ Poor energy management               | ✅ AI-powered load distribution         |
+| ❌ Clunky user experience               | ✅ Sleek, intuitive UI                  |
 
 ---
 
-## 👥 Team Members
+## 🔐 Key Features
 
-- Sarvadnya Mense  
-- Atharva Patil  
-- Arya Khobragade  
-- Aaryan Mane  
-- Monika Mohite  
-- Himani Salunkhe  
-
----
-
-## 📸 Screenshots (Coming Soon)
-
-> UI Mockups, Booking System, Dashboard, etc.  
-*Stay tuned as we roll out the MVP design!*
+- 👥 **User Registration & Login**
+- 📅 **Advanced Slot Booking System**
+- 🗺️ **Interactive Charging Station Map**
+- 📊 **Admin Dashboard** with full analytics
+- 🔌 **Live Power Monitoring**
+- 🤖 **AI-based Demand Prediction**
+- 📱 **Responsive UI for all devices**
 
 ---
 
-## 🚀 Future Plans
+## 🧱 Tech Stack
 
-- 🔐 OTP / Biometric-based login  
-- 🔋 Solar-based energy integration  
-- 📱 Android/iOS mobile app version  
-- 🧾 Invoice generation & billing system  
-- 📈 Predictive Analytics for usage forecasting  
+| Layer         | Technologies Used                           |
+|---------------|----------------------------------------------|
+| 🌐 Frontend   | `React.js`, `Tailwind CSS`                  |
+| 🧠 AI / ML    | `Scikit-learn` (KNN, Clustering)            |
+| 🔧 Backend    | `Flask (Python)`, `Node.js`, `Express.js`   |
+| 🗃️ Database   | `MongoDB`                                   |
+| 🌐 APIs       | `REST APIs`, `WebSockets`                   |
+| 🚀 DevOps     | `GitHub`, `Vercel` / `Render` / `Railway`   |
 
 ---
 
-## 🏁 Submission For: K-Impact 2025
+## 👨‍💻 Meet the Team
 
-This project is developed as an official entry for the **K-Impact Innovation Challenge**, focusing on smart energy, mobility, and sustainable tech.
+| Name              | Role |
+|-------------------|------|
+| 👩‍💻 Sarvadnya Mense   | Developer |
+| 🧑‍💻 Atharva Patil     | Developer |
+| 👨‍💻 Arya Khobragade   | Developer |
+| 👨‍💻 Aaryan Mane       | Developer |
+| 👩‍💻 Monika Mohite     | Developer |
+| 👩‍💻 Himani Salunkhe   | Developer |
 
-Let’s electrify the future, one smart station at a time! ⚡🚘
+---
+
+## 🖼️ Prototype Screenshots
+
+# Web Interface
+
+### 📅 User Dashboard
+
+> Reserve your slot in advance by selecting location, date, and time.
+
+---
+
+### Provider Dasboard
+<h2 align="center"> Dashboard Snapshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="readme_images/dashboard.png" alt="User Dashboard" width="400"/>
+      <br/>
+      <sub>User Dashboard</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/provider_dasboard.png" alt="Provider   Dashboard" width="400"/>
+      <br/>
+      <sub>Provider Dashboard</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="readme_images/web.png" alt="Availability" width="400"/>
+      <br/>
+      <sub>Navigation Panel</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/EvStatus.png" alt="Charging History" width="400"/>
+      <br/>
+      <sub>Charging History</sub>
+    </td>
+  </tr>
+</table>
+
+> Analytics, revenue insights, and load monitoring — all in one place.
+
+---
+
+### ⚡ Live Power Monitoring
+
+![Power Monitoring UI](insert-image-link-4)
+
+> Track current consumption and station status live.
+
+---
+
+## 🚀 Future Roadmap
+
+- 🔐 OTP / Biometric-based Login
+- ☀️ Solar Energy Integration
+- 📱 Dedicated Android / iOS App
+- 🧾 Smart Billing & Invoicing
+- 📈 Predictive Analytics for Demand Forecasting
 
 ---
 
