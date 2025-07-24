@@ -22,7 +22,87 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 - 🎯 **Clean, User-Centric Interfaces** — for users and admins alike.
 
 ---
+# <center> Prototype Screenshots
 
+
+
+<h2 align="center">Web  Dashboard Snapshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="readme_images/dashboard.png" alt="User Dashboard" width="400"/>
+      <br/>
+      <sub>User Dashboard</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/provider_dasboard.png" alt="Provider   Dashboard" width="400"/>
+      <br/>
+      <sub>Provider Dashboard</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="readme_images/Web.png" alt="Availability" width="400"/>
+      <br/>
+      <sub>Navigation Panel</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/EvStatus.png" alt="EV Status" width="400"/>
+      <br/>
+      <sub>Charging History</sub>
+    </td>
+  </tr>
+</table>
+
+<h2 align="center"> Android Application Snapshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="readme_images/Android.png" alt="User Dashboard" width="200"/>
+      <br/>
+      <sub>Provider Dashboard </sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/welcomeNew.jpg" alt="Provider Dashboard" width="200"/>
+      <br/>
+      <sub>Landing Page</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="readme_images/Provider_dashboard_2.jpg" alt="Availability" width="200"/>
+      <br/>
+      <sub>Booking Status</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/map.jpg" alt="EV Status" width="200"/>
+      <br/>
+      <sub>User Dashboard</sub>
+    </td>
+  </tr>
+</table>
+
+
+<h2 align="center"> Iot and BlockChain snapshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="readme_images/IOT.png" alt="User Dashboard" width="300"/>
+      <br/>
+      <sub>Circuit Diagram </sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/Blockchain.png" alt="Provider Dashboard" width="350"/>
+      <br/>
+      <sub>BlockChain Smart Contract</sub>
+    </td>
+  </tr>
+  <</table>
+
+---
 ## 🧩 The Problem We're Solving
 
 | ❌ Current Issues                        | ✅ Our Solution                        |
@@ -72,77 +152,9 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 
 ---
 
-## 🖼️ Prototype Screenshots
-
-# Web Interface
-
-
-<h2 align="center"> Dashboard Snapshots</h2>
-
-<table align="center">
-  <tr>
-    <td align="center">
-      <img src="readme_images/dashboard.png" alt="User Dashboard" width="400"/>
-      <br/>
-      <sub>User Dashboard</sub>
-    </td>
-    <td align="center">
-      <img src="readme_images/provider_dasboard.png" alt="Provider   Dashboard" width="400"/>
-      <br/>
-      <sub>Provider Dashboard</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="readme_images/Web.png" alt="Availability" width="400"/>
-      <br/>
-      <sub>Navigation Panel</sub>
-    </td>
-    <td align="center">
-      <img src="readme_images/EvStatus.png" alt="EV Status" width="400"/>
-      <br/>
-      <sub>Charging History</sub>
-    </td>
-  </tr>
-</table>
-
-<h2 align="center"> Dashboard Snapshots</h2>
-
-<table align="center">
-  <tr>
-    <td align="center">
-      <img src="readme_images/Android.jpg" alt="User Dashboard" width="200"/>
-      <br/>
-      <sub>Provider Dashboard </sub>
-    </td>
-    <td align="center">
-      <img src="readme_images/welcomeNew.jpg" alt="Provider Dashboard" width="200"/>
-      <br/>
-      <sub>Landing Page</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="readme_images/Provider_dashboard_2.jpg" alt="Availability" width="200"/>
-      <br/>
-      <sub>Booking Status</sub>
-    </td>
-    <td align="center">
-      <img src="readme_images/map.jpg" alt="EV Status" width="200"/>
-      <br/>
-      <sub>User Dashboard</sub>
-    </td>
-  </tr>
-</table>
-> Analytics, revenue insights, and load monitoring — all in one place.
 
 ---
 
-### ⚡ Live Power Monitoring
-
-![Power Monitoring UI](insert-image-link-4)
-
-> Track current consumption and station status live.
 
 ---
 
