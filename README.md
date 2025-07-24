@@ -76,13 +76,7 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 
 # Web Interface
 
-### 📅 User Dashboard
 
-> Reserve your slot in advance by selecting location, date, and time.
-
----
-
-### Provider Dasboard
 <h2 align="center"> Dashboard Snapshots</h2>
 
 <table align="center">
@@ -105,13 +99,41 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
       <sub>Navigation Panel</sub>
     </td>
     <td align="center">
-      <img src="readme_images/EvStatus.png" alt="Charging History" width="400"/>
+      <img src="readme_images/EvStatus.png" alt="EV Status" width="400"/>
       <br/>
       <sub>Charging History</sub>
     </td>
   </tr>
 </table>
 
+<h2 align="center"> Dashboard Snapshots</h2>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="readme_images/Android.png" alt="User Dashboard" width="200"/>
+      <br/>
+      <sub>Android </sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/welcomeNew.jpg" alt="Provider   Dashboard" width="200"/>
+      <br/>
+      <sub>Provider Dashboard</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="readme_images/Provider_dashboard_2.jpg" alt="Availability" width="200"/>
+      <br/>
+      <sub>Navigation Panel</sub>
+    </td>
+    <td align="center">
+      <img src="readme_images/EvStatus.png" alt="EV Status" width="400"/>
+      <br/>
+      <sub>Charging History</sub>
+    </td>
+  </tr>
+</table>
 > Analytics, revenue insights, and load monitoring — all in one place.
 
 ---
