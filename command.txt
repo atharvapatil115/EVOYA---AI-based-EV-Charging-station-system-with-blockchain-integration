@@ -1,0 +1,1 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/71537315-1559-4965-887e-b12a51f56777/deploy-status)](https://app.netlify.com/projects/evoya/deploys)

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext'; // Commented out: Database-related import
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
@@ -9,8 +9,14 @@ const SignInPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn } = useAuth();
+  // const { signIn } = useAuth(); // Commented out: Database-related hook
   const navigate = useNavigate();
+
+  // Demo user credentials
+  const DEMO_USER = {
+    email: 'user@gmail.com',
+    password: 'userpassword123',
+  };
 
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,14 +47,26 @@ const SignInPage = () => {
       return;
     }
 
-    console.log('Submitting to signIn:', { email: trimmedEmail, password: '****' });
+    console.log('Attempting sign-in with:', { email: trimmedEmail, password: '****' });
 
     setLoading(true);
 
     try {
-      await signIn(trimmedEmail, trimmedPassword);
-      console.log('Sign-in successful, navigating to dashboard');
-      navigate('/Dashboard');
+      // New logic: Compare with demo user credentials
+      if (trimmedEmail === DEMO_USER.email && trimmedPassword === DEMO_USER.password) {
+        console.log('Demo sign-in successful, navigating to dashboard');
+        // Simulate a slight delay for better UX, similar to an actual API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        navigate('/Dashboard');
+      } else {
+        // If credentials don't match the demo user
+        throw new Error('Invalid email or password for demo user.');
+      }
+
+      // Original database sign-in logic (commented out)
+      // await signIn(trimmedEmail, trimmedPassword);
+      // console.log('Sign-in successful, navigating to dashboard');
+      // navigate('/Dashboard');
     } catch (err: any) {
       console.error('Authentication error:', err.message);
       setError(err.message || 'Authentication failed');
@@ -63,7 +81,12 @@ const SignInPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8 space-y-8">
+      {/* Prototype Banner */}
+      <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-center py-2 text-sm font-medium shadow-md z-50">
+        This is a PROTOTYPE website. Use <span className="font-bold">user@gmail.com</span> as username and <span className="font-bold">userpassword123</span> as password.
+      </div>
+
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8 space-y-8 mt-16 md:mt-0"> {/* Added mt-16 to push content down for banner */}
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Sign in to your account</h2>
           <div className="flex justify-center mt-4">
@@ -77,7 +100,7 @@ const SignInPage = () => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
@@ -94,7 +117,12 @@ const SignInPage = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-700">
-                  {error === 'User not found. Please register.' ? (
+                  {/* Modified error message for demo user */}
+                  {error === 'Invalid email or password for demo user.' ? (
+                    <>
+                      {error} Please use the provided demo credentials.
+                    </>
+                  ) : error === 'User not found. Please register.' ? (
                     <>
                       {error} <button onClick={handleSignUpClick} className="underline text-green-600 hover:text-green-500">Sign up here</button>.
                     </>
@@ -142,7 +170,7 @@ const SignInPage = () => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 text-gray-600 hover:text-gray-800 focus:outline-none"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? 'Hide' : 'Show'}

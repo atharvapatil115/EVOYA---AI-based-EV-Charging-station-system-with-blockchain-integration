@@ -143,8 +143,8 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 
 | Name              | Role |
 |-------------------|------|
-| 👩‍💻 Sarvadnya Mense   | Jhata developer |
-| 🧑‍💻 Atharva Patil     | ML model development, Web Development |
+| 👩‍💻 Sarvadnya Mense   | AI/ML developer |
+| 🧑‍💻 Atharva Patil     | AI/ML model development, Web Development |
 | 👨‍💻 Arya Khobragade   | Blockchain Development|
 | 👩‍💻 Monika Mohite     | Web, Android Development |
 
