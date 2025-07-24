@@ -100,7 +100,7 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
   </tr>
   <tr>
     <td align="center">
-      <img src="readme_images/web.png" alt="Availability" width="400"/>
+      <img src="readme_images/Web.png" alt="Availability" width="400"/>
       <br/>
       <sub>Navigation Panel</sub>
     </td>
