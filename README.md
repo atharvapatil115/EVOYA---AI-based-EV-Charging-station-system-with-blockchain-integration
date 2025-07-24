@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&center=true&vCenter=true&width=435&lines=Smart+EV+Charging+Station;By+Team+SustainCharge" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&center=true&vCenter=true&width=435&lines=Smart+EV+Charging+Station;By+Team+EVOYA" alt="Typing SVG" />
 </p>
 
 <p align="center">
