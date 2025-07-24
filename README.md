@@ -111,26 +111,26 @@ This project introduces a **smart, scalable EV charging solution** to tackle the
 <table align="center">
   <tr>
     <td align="center">
-      <img src="readme_images/Android.png" alt="User Dashboard" width="200"/>
+      <img src="readme_images/Android.jpg" alt="User Dashboard" width="200"/>
       <br/>
-      <sub>Android </sub>
+      <sub>Provider Dashboard </sub>
     </td>
     <td align="center">
-      <img src="readme_images/welcomeNew.jpg" alt="Provider   Dashboard" width="200"/>
+      <img src="readme_images/welcomeNew.jpg" alt="Provider Dashboard" width="200"/>
       <br/>
-      <sub>Provider Dashboard</sub>
+      <sub>Landing Page</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="readme_images/Provider_dashboard_2.jpg" alt="Availability" width="200"/>
       <br/>
-      <sub>Navigation Panel</sub>
+      <sub>Booking Status</sub>
     </td>
     <td align="center">
-      <img src="readme_images/EvStatus.png" alt="EV Status" width="400"/>
+      <img src="readme_images/map.jpg" alt="EV Status" width="200"/>
       <br/>
-      <sub>Charging History</sub>
+      <sub>User Dashboard</sub>
     </td>
   </tr>
 </table>
