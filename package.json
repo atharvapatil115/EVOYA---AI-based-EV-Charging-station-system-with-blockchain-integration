@@ -28,9 +28,11 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
+    "react-lottie": "^1.2.10",
     "react-responsive-carousel": "^3.2.23",
     "react-router-dom": "^6.30.1",
-    "three": "^0.165.0"
+    "three": "^0.165.0",
+    "web3": "^4.16.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -38,6 +40,8 @@
     "@types/leaflet-routing-machine": "^3.2.8",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
+    "@types/react-lottie": "^1.2.10",
+    "@types/web3": "^1.0.20",
     "@vitejs/plugin-react": "^4.5.0",
     "autoprefixer": "^10.4.18",
     "eslint": "^9.9.1",

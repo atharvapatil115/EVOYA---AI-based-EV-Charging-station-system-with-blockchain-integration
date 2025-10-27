@@ -9,7 +9,7 @@ import math
 import traceback
 import pymongo
 from bson.objectid import ObjectId
-from database import insert_user, insert_provider
+# from database import insert_user, insert_provider
 import numpy as np
 import pandas as pd
 import logging
@@ -55,9 +55,9 @@ except Exception as e:
 try:
     with open(os.path.join('Models2', 'Models2', 'load_balancing_model.pkl'), 'rb') as file:
         load_balancer_data = pickle.load(file)
-        load_balancer = load_balancer_data['model']
-        scaler = load_balancer_data['scaler']
-        feature_names = load_balancer_data['feature_names']
+    load_balancer = load_balancer_data['model']
+    scaler = load_balancer_data['scaler']
+    feature_names = load_balancer_data['feature_names']
 except FileNotFoundError:
     logger.error(f"Pickle file not found at {os.path.join('Models2', 'Models2', 'load_balancing_model.pkl')}")
     raise Exception("Load balancing model file not found. Check the file path.")
@@ -69,6 +69,17 @@ except Exception as e:
 logger.debug("Available methods in nearby model: %s", dir(nearby_model))
 logger.debug("Available methods in load balancer: %s", dir(load_balancer))
 logger.debug("Expected feature names: %s", feature_names)
+
+# In-memory data store for bookings
+bookings_in_memory = []
+# In-memory station data for demonstration
+stations_in_memory = {
+    '66ccb23f81e649ef9b56f8f4': {
+        'name': 'Default Charging Station',
+        'address': 'Default Address, Somewhere',
+        '_id': ObjectId('66ccb23f81e649ef9b56f8f4')
+    }
+}
 
 # Haversine formula to calculate distance
 def haversine(lat1, lon1, lat2, lon2):
@@ -132,10 +143,6 @@ def signin():
         if password != user["password"]:
             logger.debug(f"Password mismatch for email: {email}")
             return jsonify({"error": "Incorrect password."}), 401
-        
-        if user.get("status") != "approved":
-            logger.debug(f"User {email} not approved, status: {user.get('status')}")
-            return jsonify({"error": "Account is not approved yet."}), 403
         
         logger.debug(f"Login successful for email: {email}, userType: {user['userType']}")
         return jsonify({
@@ -228,19 +235,22 @@ def create_user():
             return jsonify({"error": "No data provided"}), 400
         
         required_fields = ['name', 'email', 'phone', 'evModel', 'batteryCapacity', 
-                          'preferredConnector', 'avgDailyDistance', 'password', 'userType']
+                           'preferredConnector', 'avgDailyDistance', 'password', 'userType']
         for field in required_fields:
             if field not in data or data[field] is None:
                 return jsonify({"error": f"Missing or null required field: {field}"}), 400
+        
+        data['batteryCapacity'] = float(data['batteryCapacity'])
+        data['avgDailyDistance'] = float(data['avgDailyDistance'])
         
         client = pymongo.MongoClient("mongodb://localhost:27017/")
         db = client["auth_db"]
         if db.users.find_one({"email": data["email"].lower()}):
             return jsonify({"error": "Email already exists"}), 400
         
-        user_id = insert_user(data)
+        user_id = db.users.insert_one(data).inserted_id
         logger.debug(f"User created with ID: {user_id}")
-        return jsonify({"message": "User created successfully", "user_id": user_id}), 201
+        return jsonify({"message": "User created successfully", "user_id": str(user_id)}), 201
     except Exception as e:
         logger.error(f"Error in create_user: {str(e)}")
         logger.error(traceback.format_exc())
@@ -259,8 +269,8 @@ def create_station():
             return jsonify({"error": "No data provided"}), 400
         
         required_fields = ['name', 'phone', 'email', 'address', 'openingTime', 
-                          'closingTime', 'chargingCapacity', 'stationType', 'location', 
-                          'connectorTypes', 'password', 'userType']
+                           'closingTime', 'chargingCapacity', 'stationType', 'location', 
+                           'connectorTypes', 'password', 'userType']
         for field in required_fields:
             if field not in data or data[field] is None:
                 return jsonify({"error": f"Missing or null required field: {field}"}), 400
@@ -273,9 +283,9 @@ def create_station():
         if db.providers.find_one({"email": data["email"].lower()}):
             return jsonify({"error": "Email already exists"}), 400
         
-        provider_id = insert_provider(data)
+        provider_id = db.providers.insert_one(data).inserted_id
         logger.debug(f"Provider created with ID: {provider_id}")
-        return jsonify({"message": "Provider created successfully", "provider_id": provider_id}), 201
+        return jsonify({"message": "Provider created successfully", "provider_id": str(provider_id)}), 201
     except Exception as e:
         logger.error(f"Error in create_station: {str(e)}")
         logger.error(traceback.format_exc())
@@ -306,12 +316,21 @@ def find_nearest():
                 formatted_stations.append({
                     "id": str(station['_id']),
                     "name": station.get('stationName', station['name']),
-                    "distance": round(distance, 2),
+                    "location": station.get('address'),
+                    "address": station.get('address'),
+                    "powerAvailable": station.get('chargingCapacity', 0),
+                    "lastUpdated": datetime.now().isoformat(),
+                    "pricePerKWh": station.get('pricePerKWh', '₹15.00'),
+                    "connectorTypes": station.get('connectorTypes', []),
+                    "status": "Available", # Placeholder
                     "lat": station_lat,
                     "lng": station_lng,
-                    "type": station.get('stationType'),
-                    "connectors": station.get('connectorTypes', []),
-                    "capacity": station.get('chargingCapacity')
+                    "totalSlots": station.get('totalSlots', 5), # Placeholder
+                    "bookedSlots6AM_11AM": 0, # Placeholder
+                    "bookedSlots11AM_4PM": 0, # Placeholder
+                    "bookedSlots4PM_10PM": 0, # Placeholder
+                    "recommended": True, # Placeholder
+                    "weatherSafe": True # Placeholder
                 })
         
         return jsonify(formatted_stations), 200
@@ -348,6 +367,10 @@ def get_availability_prediction():
             
             logger.debug("Handling DataFrame from model")
             for _, station in stations.iterrows():
+                # --- FIX IS HERE ---
+                # Initialize 'recommended' to a default value at the start of the loop
+                recommended = False
+
                 # Determine time slot for recommendation
                 hour = datetime.now().hour
                 time_slot = get_time_slot(hour)
@@ -373,7 +396,8 @@ def get_availability_prediction():
                         input_array[i] = input_data.get(feature, 0)
                     input_array = input_array.reshape(1, -1)
                     scaled_input = scaler.transform(input_array)
-                    recommended = bool(load_balancer.predict(scaled_input)[0])
+                    prediction = load_balancer.predict(scaled_input)[0]
+                    recommended = bool(prediction)
                 except Exception as e:
                     logger.error(f"Error predicting recommendation: {str(e)}")
                     recommended = False
@@ -389,12 +413,12 @@ def get_availability_prediction():
                         station.get('11AM-4PM_Booked_slots', 0),
                         station.get('4PM-10PM_Booked_slots', 0)
                     ) else "Full",
-                    "connectorTypes": ["CCS", "Type 2"],  # Sample data
+                    "connectorTypes": ["CCS", "Type 2"],
                     "location": f"{station.get('city', 'Unknown')}, {station.get('state', 'Unknown')}",
                     "address": station.get('address', 'Unknown'),
-                    "powerAvailable": 50,  # Sample data
+                    "powerAvailable": 50,
                     "lastUpdated": datetime.now().isoformat(),
-                    "pricePerKWh": "₹15.00",  # Sample data
+                    "pricePerKWh": "₹15.00",
                     "status": "Available",
                     "totalSlots": int(station.get('Total_Slots', 0)),
                     "bookedSlots6AM_11AM": int(station.get('6AM-11AM_Booked_slots', 0)),
@@ -460,5 +484,61 @@ def test_prediction():
         logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/bookings', methods=['POST', 'OPTIONS'])
+def create_booking():
+    logger.debug(f"Handling {request.method} /api/bookings")
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    try:
+        data = request.get_json()
+        # Get user data directly from the request body
+        user_name = data.get('userName')
+        user_email = data.get('userEmail')
+        station_id = data.get('stationId')
+
+        if not user_name or not user_email or not station_id:
+            return jsonify({"error": "User name, email, and Station ID are required"}), 400
+        
+        # Find the station based on the ID provided in the request
+        station = stations_in_memory.get(station_id)
+
+        if not station:
+            return jsonify({"error": "Station not found"}), 404
+
+        # Create a new booking object using the provided data
+        booking_data = {
+            "id": str(uuid.uuid4()),
+            "user": user_name,
+            "station": station.get('name', 'N/A'),
+            "startTime": datetime.now().isoformat(),
+            "duration": "1 hour",
+            "status": "Upcoming",
+            "revenue": "₹500"
+        }
+
+        # Add the booking to the in-memory list
+        bookings_in_memory.append(booking_data)
+        logger.debug(f"New booking created and added to in-memory store: {booking_data['id']}")
+        
+        return jsonify({
+            "message": "Booking request sent successfully!",
+            "bookingId": booking_data['id']
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Error creating booking: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": "Failed to create booking"}), 500
+
+@app.route('/api/provider-bookings', methods=['GET', 'OPTIONS'])
+def get_provider_bookings():
+    logger.debug(f"Handling {request.method} /api/provider-bookings")
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    # Return all bookings from the in-memory list
+    return jsonify(bookings_in_memory), 200
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+

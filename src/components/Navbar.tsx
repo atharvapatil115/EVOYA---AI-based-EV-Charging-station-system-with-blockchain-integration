@@ -8,9 +8,10 @@ interface NavbarProps {
   isDarkMode: boolean;
   setIsDarkMode: (isDark: boolean) => void;
   activeSection: string;
+  onSwitchToProvider: () => void; // <--- NEW PROP
 }
 
-const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection }) => {
+const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDarkMode, activeSection, onSwitchToProvider }) => {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
 
   const handleProfileClick = () => {
@@ -22,6 +23,8 @@ const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDark
       alert('Opening user profile');
     } else if (option === 'logout') {
       alert('Logging out');
+    } else if (option === 'switch') { // <--- NEW OPTION
+      onSwitchToProvider();
     }
     setIsProfileOpen(false);
   };
@@ -107,6 +110,14 @@ const Navbar: React.FC<NavbarProps> = ({ setActiveSection, isDarkMode, setIsDark
                     } transition-colors`}
                   >
                     Profile
+                  </button>
+                  <button
+                    onClick={() => handleProfileOption('switch')}
+                    className={`block w-full text-left px-4 py-2 text-sm ${
+                      isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'
+                    } transition-colors`}
+                  >
+                    Switch to Provider
                   </button>
                   <button
                     onClick={() => handleProfileOption('logout')}

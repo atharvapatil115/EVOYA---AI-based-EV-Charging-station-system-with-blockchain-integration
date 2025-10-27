@@ -8,10 +8,10 @@ interface FormData {
   email: string;
   phone: string;
   evModel: string;
-  batteryCapacity: string;
+  batteryCapacity: number | ''; // Correctly typed as number or empty string
+  avgDailyDistance: number | ''; // Correctly typed as number or empty string
   homeCharging: boolean;
   preferredConnector: string;
-  avgDailyDistance: string;
   password: string;
   confirmPassword: string;
   userType: 'ev_user' | 'provider';
@@ -34,19 +34,32 @@ const EVOwnerInfoPage = () => {
 
   const [showFirstModal, setShowFirstModal] = useState(false);
   const [showSecondModal, setShowSecondModal] = useState(false);
-  const [error, setError] = useState<string | null>(null); // Allow string or null
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // --- FIX #1: This function now correctly handles number inputs ---
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement; // Type assertion for checkbox
+    const { name, value, type } = e.target;
 
+    // Handle checkboxes separately
     if (type === 'checkbox') {
+      const { checked } = e.target as HTMLInputElement;
       setFormData((prev) => ({ ...prev, [name]: checked }));
+      return; // Exit after handling
+    }
+    
+    // Check if the input is one that should be a number
+    if (name === 'batteryCapacity' || name === 'avgDailyDistance') {
+      // If the input is cleared, set state to ''. Otherwise, convert to a number.
+      const numericValue = value === '' ? '' : parseFloat(value);
+      setFormData((prev) => ({ ...prev, [name]: numericValue }));
     } else {
+      // Handle all other (string) inputs as before
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
+  // --- FIX #2: This function is now simpler as data types are already correct ---
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -59,18 +72,30 @@ const EVOwnerInfoPage = () => {
       setError('Password and Confirm Password are required');
       return;
     }
+    if (formData.batteryCapacity === '' || formData.avgDailyDistance === '') {
+        setError('Battery Capacity and Daily Distance are required.');
+        return;
+    }
+
 
     // Prepare payload without confirmPassword
     const { confirmPassword, ...payload } = formData;
 
-    try {
-      const response = await axios.post('http://localhost:5000/api/users', payload, {
-        withCredentials: true, // Match backend's supports_credentials
+    // The data is already in the correct format! Just add the status.
+    const dataToSend = {
+      ...payload,
+      status: 'approved', 
+    };
+
+   try {
+      // Send the correctly formatted data
+      const response = await axios.post('http://localhost:5000/api/users', dataToSend, {
+        withCredentials: true,
       });
       console.log('Form submitted successfully:', response.data);
       setShowFirstModal(true);
     } catch (err) {
-      const axiosError = err as AxiosError<{ error?: string }>; // Type Axios error
+      const axiosError = err as AxiosError<{ error?: string }>;
       setError(axiosError.response?.data?.error || 'Registration failed');
     }
   };
