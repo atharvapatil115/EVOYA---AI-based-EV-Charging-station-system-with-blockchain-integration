@@ -103,7 +103,7 @@ interface Station {
     address: string;
     powerAvailable: number;
     lastUpdated: string;
-    pricePerKWh: string;
+    pricePerKWh: string; // Keep this as string (e.g., "₹15.50") for UPI
     connectorTypes: string[];
     status: string;
     lat: number;
@@ -385,18 +385,14 @@ const MapLayers: React.FC<MapLayersProps> = ({ mapType }) => {
 };
 
 
-// --- [NEW] ACTIVE CHARGING COMPONENT (WEB3 INTEGRATION) ---
-// This component now loads the ABI and Address dynamically
-// --- [NEW] ACTIVE CHARGING COMPONENT (WEB3 & UPI INTEGRATION) ---
-// This component now loads the ABI and Address dynamically
-// And includes a parallel UPI payment flow
+// --- [UPDATED] ACTIVE CHARGING COMPONENT (WEB3 & UPI INTEGRATION) ---
 
 const CHARGE_RATE_ETH_PER_SECOND = 0.0001;
-const MOCK_CHARGE_RATE_KW = 7; // Mock 7kW power draw for UPI calculation
+const MOCK_CHARGE_RATE_KW = 7; // Mock 7kW power draw
 
 interface ActiveChargingProps {
     isDarkMode: boolean;
-    handleSessionEnd: () => void; // This is the 'handleReleaseSlot' function
+    handleSessionEnd: () => void;
     station: Station; 
 }
 
@@ -410,7 +406,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
     const [contract, setContract] = useState<any>(null);
     const [contractConfig, setContractConfig] = useState<{ abi: any[], address: string } | null>(null);
     const [configStatus, setConfigStatus] = useState<string>('Initializing Web3...');
-    const [web3Status, setWeb3Status] = useState('Not Started'); // Replaces 'status'
+    const [web3Status, setWeb3Status] = useState('Not Started');
     const [connectStatus, setConnectStatus] = useState('');
     const [isWeb3Charging, setIsWeb3Charging] = useState(false);
     const [web3StartTime, setWeb3StartTime] = useState(0);
@@ -418,6 +414,10 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
     const [web3Cost, setWeb3Cost] = useState(0);
     const web3TimerRef = useRef<NodeJS.Timeout | null>(null);
     
+    // --- [NEW] State for Energy and USD Price ---
+    const [web3PowerConsumed, setWeb3PowerConsumed] = useState(0);
+    const [ethToUsdRate, setEthToUsdRate] = useState<number | null>(null);
+
     // --- [3] UPI STATE ---
     const [isUpiCharging, setIsUpiCharging] = useState(false);
     const [upiStartTime, setUpiStartTime] = useState(0);
@@ -430,8 +430,9 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
 
     // --- [A] WEB3 EFFECTS & FUNCTIONS ---
 
-    // [A.1] Initialize Web3
+    // [A.1] Initialize Web3 & Fetch ETH Price
     useEffect(() => {
+        // Init Web3
         if ((window as any).ethereum) {
             const web3Instance = new Web3((window as any).ethereum);
             setWeb3(web3Instance);
@@ -439,15 +440,33 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         } else {
             setConfigStatus('Please install MetaMask!');
         }
+
+        // [NEW] Fetch ETH to USD Price
+        const fetchEthPrice = async () => {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+                if (!response.ok) throw new Error('Failed to fetch ETH price');
+                const data = await response.json();
+                setEthToUsdRate(data.ethereum.usd);
+                console.log('ETH Price Loaded:', data.ethereum.usd);
+            } catch (error) {
+                console.error('Error fetching ETH price:', error);
+                setEthToUsdRate(null); // Handle error case
+            }
+        };
+        
+        fetchEthPrice();
     }, []);
 
     // [A.2] Load Contract ABI and Address from JSON
     useEffect(() => {
-        const CONTRACT_JSON_NAME = 'ChargingContract.json'; 
+        // This filename MUST match your file in /public/build/contracts/
+        const CONTRACT_JSON_NAME = 'EVCharging.json';
 
         const loadContractConfig = async () => {
             if (!web3) return; // Wait for web3
             
+            setConfigStatus('Loading contract details...');
             try {
                 const response = await fetch(`/build/contracts/${CONTRACT_JSON_NAME}`);
                 if (!response.ok) {
@@ -472,9 +491,9 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         };
         
         loadContractConfig();
-    }, [web3]); // This effect runs once web3 is initialized
+    }, [web3]);
 
-    // [A.3] Web3 Charging Timer
+    // [A.3] Web3 Charging Timer - [UPDATED]
     useEffect(() => {
         if (isWeb3Charging && web3StartTime > 0) {
             web3TimerRef.current = setInterval(() => {
@@ -482,6 +501,11 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
                 const elapsed = now - web3StartTime;
                 setWeb3ElapsedTime(elapsed);
                 setWeb3Cost(elapsed * CHARGE_RATE_ETH_PER_SECOND);
+                
+                // [NEW] Calculate power
+                const hours = elapsed / 3600;
+                const powerKWh = MOCK_CHARGE_RATE_KW * hours;
+                setWeb3PowerConsumed(powerKWh);
             }, 1000);
         } else {
             if (web3TimerRef.current) {
@@ -504,7 +528,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         }
         if (!contractConfig) {
             setConnectStatus(`Contract config not loaded. Status: ${configStatus}`);
-            return;
+            return; // This is where it's failing
         }
         
         try {
@@ -522,41 +546,73 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         }
     };
 
-    // [A.5] Web3 Start Charging
-    const handleWeb3Start = async () => {
+    // [A.5] Web3 Start Charging - [IMPROVED]
+   // [A.5] Web3 Start Charging - [NEW GAS-LESS START]
+    const handleWeb3Start = () => {
         if (!contract || !account) {
             setWeb3Status('Please connect wallet first.');
             return;
         }
-        try {
-            setWeb3Status('Sending transaction...');
-            await contract.methods.startCharging().send({ from: account });
-            
-            const chargingStartTime = Math.floor(Date.now() / 1000);
-            setWeb3StartTime(chargingStartTime);
-            setIsWeb3Charging(true);
-            setWeb3Status('Charging');
-        } catch (error) {
-            console.error('Error starting charging:', error);
-            setWeb3Status('Error starting charging.');
-        }
+        
+        // Reset metrics
+        setWeb3ElapsedTime(0);
+        setWeb3Cost(0);
+        setWeb3PowerConsumed(0);
+        
+        // Set start time and start the timer
+        setWeb3StartTime(Math.floor(Date.now() / 1000));
+        setIsWeb3Charging(true);
+        setWeb3Status('Charging');
     };
-
-    // [A.6] Web3 Stop Charging
+    // [A.6] Web3 Stop Charging - [IMPROVED]
+    // [A.6] Web3 Stop Charging - [NEW PAYMENT LOGIC]
     const handleWeb3Stop = async () => {
-        if (!contract || !account) {
-            setWeb3Status('Please connect wallet first.');
+        if (!contract || !account || !web3) {
+            setWeb3Status('Wallet or Web3 not initialized.');
             return;
         }
+        
+        // Stop the timer immediately
+        setIsWeb3Charging(false);
+        if (web3TimerRef.current) {
+            clearInterval(web3TimerRef.current);
+        }
+
+        // Calculate final values
+        const finalElapsed = Math.floor(Date.now() / 1000) - web3StartTime;
+        const finalCostETH = finalElapsed * CHARGE_RATE_ETH_PER_SECOND;
+        const finalPower = (finalElapsed / 3600) * MOCK_CHARGE_RATE_KW;
+
+        // Set state so the UI updates with final values
+        setWeb3ElapsedTime(finalElapsed);
+        setWeb3Cost(finalCostETH);
+        setWeb3PowerConsumed(finalPower);
+
+        // --- CRITICAL STEP: Convert ETH cost to Wei ---
+        const finalCostInWei = web3.utils.toWei(finalCostETH.toString(), 'ether');
+
         try {
-            setWeb3Status('Sending stop transaction...');
-            await contract.methods.stopCharging().send({ from: account });
+            setWeb3Status('Finalizing... Please confirm payment in MetaMask.');
             
-            setIsWeb3Charging(false);
-            setWeb3Status('Charging Stopped. Final Cost: ' + web3Cost.toFixed(6) + ' ETH');
-        } catch (error) {
+            // This transaction IS the payment.
+            // We send 'finalCostInWei' as the 'value' (the payment).
+            await contract.methods.stopCharging().send({ 
+                from: account,
+                value: finalCostInWei  // <-- THIS IS THE PAYMENT
+            });
+            
+            const usdCost = ethToUsdRate ? (finalCostETH * ethToUsdRate).toFixed(2) : '??';
+            setWeb3Status(`Payment Successful! Final Cost: ${finalCostETH.toFixed(6)} ETH ($${usdCost})`);
+            setWeb3StartTime(0); // Reset start time
+        
+        } catch (error: any) {
             console.error('Error stopping charging:', error);
-            setWeb3Status('Error stopping charging.');
+            if (error.message && error.message.includes('User denied transaction signature')) {
+                setWeb3Status('Payment transaction rejected.');
+                // Don't restart the timer, let them try to pay again
+            } else {
+                setWeb3Status('Error processing payment.');
+            }
         }
     };
 
@@ -617,7 +673,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         handleSessionEnd(); 
     };
 
-    // [B.5] Go Back to Payment Selection
+    // [B.5] Go Back to Payment Selection - [UPDATED]
     const handleBackToSelection = () => {
         // Reset all states and go back
         setAccount('');
@@ -627,12 +683,15 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         setIsWeb3Charging(false);
         setWeb3Cost(0);
         setWeb3ElapsedTime(0);
+        setWeb3PowerConsumed(0); // [NEW] Reset power
+        setWeb3StartTime(0);
 
         setIsUpiCharging(false);
         setShowUpiQR(false);
         setUpiCost(0);
         setUpiElapsedTime(0);
         setUpiPowerConsumed(0);
+        setUpiStartTime(0);
         
         setPaymentMethod(null);
     };
@@ -673,7 +732,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
         </div>
     );
 
-    // [C.2] View: Web3 Charging Flow
+    // [C.2] View: Web3 Charging Flow - [UPDATED]
     const renderWeb3Flow = () => (
         <div className="flex flex-col h-full">
             {!account ? (
@@ -686,7 +745,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
                     >
                         Connect Wallet
                     </button>
-                    <p className={`text-sm text-center ${connectStatus.includes('Failed') ? 'text-red-500' : 'text-gray-400'}`}>
+                    <p className={`text-sm text-center ${connectStatus.includes('Failed') || configStatus.includes('Error') ? 'text-red-500' : 'text-gray-400'}`}>
                         {connectStatus || configStatus} 
                     </p>
                 </div>
@@ -696,26 +755,34 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
                     <p className="text-sm text-green-500 mb-4">{connectStatus}</p>
                     <div className="flex gap-4 mb-4">
                         <button 
-                            onClick={handleWeb3Start} 
-                            disabled={isWeb3Charging}
+                            onClick={handleWeb3Start}
+                            disabled={isWeb3Charging || web3Status.includes('Sending')}
                             className="flex-1 btn bg-green-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-500"
                         >
-                            Start Charging
+                            {isWeb3Charging ? 'Charging...' : 'Start Charging'}
                         </button>
                         <button 
                             onClick={handleWeb3Stop} 
-                            disabled={!isWeb3Charging}
+                            disabled={!isWeb3Charging || web3Status.includes('Finalizing')}
                             className="flex-1 btn bg-red-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-500"
                         >
-                            Stop Charging
+                            {web3Status.includes('Finalizing') ? 'Finalizing...' : 'Stop Charging'}
                         </button>
                     </div>
 
                     <div className="space-y-2 text-lg">
-                        <p><strong>Charging Status:</strong> <span className="font-mono">{web3Status}</span></p>
+                        <p><strong>Status:</strong> <span className="font-mono">{web3Status}</span></p>
+                        <hr className={`my-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
                         <p><strong>Elapsed Time:</strong> <span className="font-mono">{web3ElapsedTime}</span> seconds</p>
-                        <p><strong>Cost per second:</strong> <span className="font-mono">{CHARGE_RATE_ETH_PER_SECOND}</span> ETH</p>
-                        <p><strong>Total Cost:</strong> <span className="font-mono">{web3Cost.toFixed(6)}</span> ETH</p>
+                        {/* [NEW] Power Display */}
+                        <p><strong>Power Consumed:</strong> <span className="font-mono">{web3PowerConsumed.toFixed(3)} kWh</span></p>
+                        <p><strong>Total Cost (ETH):</strong> <span className="font-mono">{web3Cost.toFixed(6)}</span> ETH</p>
+                        {/* [NEW] USD Cost Display */}
+                        <p><strong>Total Cost (USD):</strong>
+                            <span className="font-mono">
+                                {ethToUsdRate ? `$ ${(web3Cost * ethToUsdRate).toFixed(2)}` : 'Loading price...'}
+                            </span>
+                        </p>
                     </div>
                 </div>
             )}
@@ -723,6 +790,7 @@ const ActiveCharging: React.FC<ActiveChargingProps> = ({ isDarkMode, handleSessi
             <button 
                 onClick={handleBackToSelection} 
                 className="w-full mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg shadow-lg font-semibold text-lg"
+                disabled={isWeb3Charging} // [NEW] Disable back button while charging
             >
                 Back to Payment Selection
             </button>
@@ -1246,7 +1314,7 @@ const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ stations = [] }) 
     // --- [NEW] HANDLER TO END WEB3 SESSION ---
     const handleSessionEnd = () => {
         setIsSessionActive(false);
-        // You could also release the slot here if desired
+        // We will let the user click "Release Slot" manually
         // handleReleaseSlot(); 
     };
 

@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 import logging
 
+
+
+
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,7 +26,7 @@ app = Flask(__name__)
 app.secret_key = 'EVOYA52025'
 
 # Configure CORS
-CORS(app, origins="http://localhost:5173", supports_credentials=True)
+CORS(app, origins=["http://localhost:5173", "http://10.164.120.39:5173"], supports_credentials=True)
 
 # Add project directories to Python path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -539,6 +542,7 @@ def get_provider_bookings():
     # Return all bookings from the in-memory list
     return jsonify(bookings_in_memory), 200
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
 
